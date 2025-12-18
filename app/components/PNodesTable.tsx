@@ -2,7 +2,7 @@
 
 import { AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { PNode } from '@/app/types';
 
 interface Props {
@@ -14,15 +14,54 @@ interface Props {
   onSelectNode: (node: PNode) => void;
 }
 
-const getScoreGrade = (score: number) => {
-  if (score >= 95) return { grade: 'A+', color: 'text-green-400' };
-  if (score >= 90) return { grade: 'A', color: 'text-green-500' };
-  if (score >= 85) return { grade: 'B+', color: 'text-blue-400' };
-  if (score >= 80) return { grade: 'B', color: 'text-blue-500' };
-  if (score >= 75) return { grade: 'C+', color: 'text-yellow-400' };
-  if (score >= 70) return { grade: 'C', color: 'text-yellow-500' };
-  if (score >= 60) return { grade: 'D', color: 'text-orange-500' };
-  return { grade: 'F', color: 'text-red-500' };
+// Format uptime: seconds -> "2d 5h" or "5h 30m"
+const formatUptime = (seconds: number): string => {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
+};
+
+// Format storage: bytes -> "1.2 TB" or "340 GB"
+const formatStorage = (bytes: number): string => {
+  const tb = bytes / 1_000_000_000_000;
+  const gb = bytes / 1_000_000_000;
+  
+  if (tb >= 1) return `${tb.toFixed(1)} TB`;
+  return `${gb.toFixed(0)} GB`;
+};
+
+// Format last seen: timestamp -> "2m ago" or "5h ago"
+const formatLastSeen = (timestamp: number): string => {
+  const diff = Date.now() - timestamp;
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days = Math.floor(diff / 86400000);
+  
+  if (days > 0) return `${days}d ago`;
+  if (hours > 0) return `${hours}h ago`;
+  return `${mins}m ago`;
+};
+
+// Get region from IP using ipapi.co (free, no key needed)
+const fetchRegion = async (ip: string): Promise<string> => {
+  if (!ip) return 'Unknown';
+  
+  try {
+    const res = await fetch(`https://ipapi.co/${ip}/json/`);
+    const data = await res.json();
+    
+    // Return country code or city if available
+    if (data.country_code) {
+      return data.city ? `${data.city}, ${data.country_code}` : data.country_code;
+    }
+    return 'Unknown';
+  } catch {
+    return 'Unknown';
+  }
 };
 
 export default function PNodesTable({
@@ -35,6 +74,31 @@ export default function PNodesTable({
 }: Props) {
   const router = useRouter();
   const [visibleCount, setVisibleCount] = useState(20);
+  const [regions, setRegions] = useState<Record<string, string>>({});
+
+  // Fetch regions for visible nodes
+  useEffect(() => {
+    const loadRegions = async () => {
+      const newRegions: Record<string, string> = {};
+      
+      // Batch fetch only for nodes we don't have yet
+      const nodesToFetch = visibleNodes.filter(
+        node => node.ipAddress && !regions[node.ipAddress]
+      );
+      
+      for (const node of nodesToFetch.slice(0, 5)) { // Rate limit: 5 at a time
+        if (node.ipAddress) {
+          newRegions[node.ipAddress] = await fetchRegion(node.ipAddress);
+        }
+      }
+      
+      if (Object.keys(newRegions).length > 0) {
+        setRegions(prev => ({ ...prev, ...newRegions }));
+      }
+    };
+    
+    loadRegions();
+  }, [visibleCount]); // Re-fetch when showing more nodes
 
   const visibleNodes = nodes.slice(0, visibleCount);
   const hasMore = visibleCount < nodes.length;
@@ -54,25 +118,29 @@ export default function PNodesTable({
 
   return (
     <>
-      {/* Desktop Table View - Hidden on mobile */}
+      {/* Desktop: Compact table */}
       <div className={`hidden md:block ${cardClass} rounded-xl border ${borderClass} overflow-hidden`}>
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-sm">
             <thead className={`${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">pNode</th>
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">XandScore™</th>
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Uptime</th>
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Storage</th>
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">IP Address</th>
-                <th className="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider">Version</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Node</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Score</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Uptime</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Last Seen</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Storage</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Region</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Ver</th>
               </tr>
             </thead>
 
             <tbody className="divide-y divide-gray-700">
               {visibleNodes.map((node) => {
-                const { grade, color } = getScoreGrade(node.score || 0);
+                const grade = node.scoreBreakdown?.grade || 'N/A';
+                const color = node.scoreBreakdown?.color || 'text-gray-400';
+                const score = node.score ?? 0;
+                const region = regions[node.ipAddress] || 'Loading...';
 
                 return (
                   <tr
@@ -80,32 +148,32 @@ export default function PNodesTable({
                     onClick={() => handleNodeClick(node)}
                     className={`hover:${darkMode ? 'bg-gray-700' : 'bg-gray-50'} transition-colors cursor-pointer`}
                   >
-                    {/* Node */}
-                    <td className="px-6 py-4">
+                    {/* Node - compact */}
+                    <td className="px-4 py-3">
                       <div className="flex flex-col">
-                        <span className="font-medium">{node.id}</span>
+                        <span className="font-medium text-xs">{node.id}</span>
                         <span className={`text-xs ${mutedClass} font-mono`}>
-                          {node.pubkey.slice(0, 12)}...
+                          {node.pubkey.slice(0, 8)}...
                         </span>
                       </div>
                     </td>
 
-                    {/* Score */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-bold">
-                          {node.score?.toFixed(1) ?? 'N/A'}
+                    {/* Score - compact */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-sm">
+                          {score > 0 ? score.toFixed(1) : 'N/A'}
                         </span>
-                        <span className={`text-sm font-semibold ${color}`}>
+                        <span className={`text-xs font-semibold ${color}`}>
                           {grade}
                         </span>
                       </div>
                     </td>
 
-                    {/* Status */}
-                    <td className="px-6 py-4">
+                    {/* Status - compact badge */}
+                    <td className="px-4 py-3">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        className={`px-2 py-0.5 rounded text-xs font-medium ${
                           node.status === 'active'
                             ? 'bg-green-500/20 text-green-400'
                             : node.status === 'syncing'
@@ -118,32 +186,33 @@ export default function PNodesTable({
                     </td>
 
                     {/* Uptime */}
-                    <td className="px-6 py-4">
-                      {node.uptime.toFixed(1)}%
+                    <td className="px-4 py-3">
+                      <span className="text-xs">{formatUptime(node.uptime)}</span>
                     </td>
 
-                    {/* Storage */}
-                    <td className="px-6 py-4">
+                    {/* Last Seen */}
+                    <td className="px-4 py-3">
+                      <span className="text-xs">{formatLastSeen(node.lastSeen)}</span>
+                    </td>
+
+                    {/* Storage - compact */}
+                    <td className="px-4 py-3">
                       <div className="flex flex-col">
-                        <span>{node.storageCommitted.toFixed(0)} GB</span>
+                        <span className="text-xs font-medium">{formatStorage(node.storageCommitted)}</span>
                         <span className={`text-xs ${mutedClass}`}>
-                          {node.storageUsagePercent.toFixed(0)}% used
+                          {node.storageUsagePercent.toFixed(1)}%
                         </span>
                       </div>
                     </td>
 
-                    {/* IP */}
-                    <td className="px-6 py-4">
-                      <span className="font-mono text-sm">
-                        {node.ipAddress || 'N/A'}
-                      </span>
+                    {/* Region */}
+                    <td className="px-4 py-3">
+                      <span className="text-xs">{region}</span>
                     </td>
 
-                    {/* Version */}
-                    <td className="px-6 py-4">
-                      <span className="font-mono text-sm">
-                        {node.version}
-                      </span>
+                    {/* Version - compact */}
+                    <td className="px-4 py-3">
+                      <span className="font-mono text-xs">{node.version}</span>
                     </td>
                   </tr>
                 );
@@ -156,17 +225,15 @@ export default function PNodesTable({
         {nodes.length === 0 && (
           <div className="text-center py-12">
             <AlertCircle className={`w-12 h-12 mx-auto mb-4 ${mutedClass}`} />
-            <p className={mutedClass}>
-              No pNodes found matching your criteria
-            </p>
+            <p className={mutedClass}>No pNodes found</p>
           </div>
         )}
 
-        {/* Footer with Load More */}
+        {/* Footer */}
         {nodes.length > 0 && (
           <div className={`px-6 py-4 border-t ${borderClass} text-center`}>
-            <p className={`${mutedClass} mb-3`}>
-              Showing {visibleCount} of {nodes.length} results
+            <p className={`${mutedClass} mb-3 text-sm`}>
+              Showing {visibleCount} of {nodes.length}
             </p>
             {hasMore && (
               <div className="flex gap-2 justify-center">
@@ -188,7 +255,7 @@ export default function PNodesTable({
                       : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
                   }`}
                 >
-                  Show All ({nodes.length})
+                  Show All
                 </button>
               </div>
             )}
@@ -196,10 +263,13 @@ export default function PNodesTable({
         )}
       </div>
 
-      {/* Mobile Card View - Visible only on mobile */}
+      {/* Mobile: Card view */}
       <div className="md:hidden space-y-3">
         {visibleNodes.map((node) => {
-          const { grade, color } = getScoreGrade(node.score || 0);
+          const grade = node.scoreBreakdown?.grade || 'N/A';
+          const color = node.scoreBreakdown?.color || 'text-gray-400';
+          const score = node.score ?? 0;
+          const region = regions[node.ipAddress] || 'Loading...';
 
           return (
             <div
@@ -209,7 +279,7 @@ export default function PNodesTable({
                 darkMode ? 'bg-gray-700' : 'bg-gray-50'
               } transition-colors`}
             >
-              {/* Header: ID and Status */}
+              {/* Header */}
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <h3 className="font-semibold text-sm">{node.id}</h3>
@@ -230,31 +300,37 @@ export default function PNodesTable({
                 </span>
               </div>
 
-              {/* Score and Grade */}
+              {/* Score row */}
               <div className="flex items-center gap-4 mb-3">
                 <div>
-                  <p className={`text-xs ${mutedClass} mb-1`}>XandScore™</p>
+                  <p className={`text-xs ${mutedClass} mb-1`}>Score</p>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-lg">
-                      {node.score?.toFixed(1) ?? 'N/A'}
+                      {score > 0 ? score.toFixed(1) : 'N/A'}
                     </span>
-                    <span className={`text-sm font-semibold ${color}`}>
-                      {grade}
-                    </span>
+                    <span className={`text-sm font-semibold ${color}`}>{grade}</span>
                   </div>
                 </div>
                 <div>
                   <p className={`text-xs ${mutedClass} mb-1`}>Uptime</p>
-                  <p className="font-medium">{node.uptime.toFixed(1)}%</p>
+                  <p className="font-medium text-sm">{formatUptime(node.uptime)}</p>
                 </div>
               </div>
 
-              {/* Storage and Version */}
+              {/* Details grid */}
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
                   <p className={`${mutedClass} mb-1`}>Storage</p>
-                  <p className="font-medium">{node.storageCommitted.toFixed(0)} GB</p>
-                  <p className={mutedClass}>{node.storageUsagePercent.toFixed(0)}% used</p>
+                  <p className="font-medium">{formatStorage(node.storageCommitted)}</p>
+                  <p className={mutedClass}>{node.storageUsagePercent.toFixed(1)}%</p>
+                </div>
+                <div>
+                  <p className={`${mutedClass} mb-1`}>Last Seen</p>
+                  <p className="font-medium">{formatLastSeen(node.lastSeen)}</p>
+                </div>
+                <div>
+                  <p className={`${mutedClass} mb-1`}>Region</p>
+                  <p className="font-medium">{region}</p>
                 </div>
                 <div>
                   <p className={`${mutedClass} mb-1`}>Version</p>
@@ -269,17 +345,15 @@ export default function PNodesTable({
         {nodes.length === 0 && (
           <div className="text-center py-12">
             <AlertCircle className={`w-12 h-12 mx-auto mb-4 ${mutedClass}`} />
-            <p className={mutedClass}>
-              No pNodes found matching your criteria
-            </p>
+            <p className={mutedClass}>No pNodes found</p>
           </div>
         )}
 
-        {/* Footer with Load More */}
+        {/* Footer */}
         {nodes.length > 0 && (
           <div className="text-center py-4">
             <p className={`${mutedClass} mb-3 text-sm`}>
-              Showing {visibleCount} of {nodes.length} results
+              Showing {visibleCount} of {nodes.length}
             </p>
             {hasMore && (
               <div className="flex flex-col gap-2">
@@ -301,7 +375,7 @@ export default function PNodesTable({
                       : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
                   }`}
                 >
-                  Show All ({nodes.length})
+                  Show All
                 </button>
               </div>
             )}
