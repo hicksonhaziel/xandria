@@ -1,4 +1,5 @@
 // lib/redis-service.ts
+export const runtime = "nodejs";
 import { redis } from '@/app/lib/redis';
 
 const CACHE_TTL = 60; // 1 minute for leaderboard
