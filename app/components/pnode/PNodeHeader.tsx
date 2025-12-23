@@ -27,17 +27,7 @@ export default function PNodeHeader({ node, darkMode }: Props) {
 
   return (
     <div className="mb-6">
-      {/* Back button */}
-      <button
-        onClick={() => router.push('/')}
-        className={`flex items-center gap-2 mb-4 px-3 py-1.5 rounded-lg text-sm transition-colors ${
-          darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-200'
-        }`}
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Network
-      </button>
-
+      
       {/* Node header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -46,7 +36,7 @@ export default function PNodeHeader({ node, darkMode }: Props) {
             <button
               onClick={handleCopy}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-mono transition-colors ${
-                darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'
+                darkMode ? 'bg-[#111827] hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'
               }`}
             >
               {node.pubkey.slice(0, 20)}...{node.pubkey.slice(-10)}

@@ -1,10 +1,7 @@
-import React from 'react'
-import XandViz from '../page'
+'use client';
 
-const pnodes = () => {
-  return (
-    <XandViz/>
-  )
+import XandViz from '../page';
+
+export default function PNodesPage() {
+  return <XandViz />;
 }
-
-export default pnodes

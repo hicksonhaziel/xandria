@@ -36,7 +36,7 @@ const formatTimeAgo = (timestamp: number): string => {
 };
 
 export default function PNodeStatsGrid({ node, darkMode }: Props) {
-  const cardClass = darkMode ? 'bg-gray-800' : 'bg-white';
+  const cardClass = darkMode ? 'bg-[#111827]' : 'bg-white';
   const borderClass = darkMode ? 'border-gray-700' : 'border-gray-200';
   const mutedClass = darkMode ? 'text-gray-400' : 'text-gray-600';
 
@@ -47,13 +47,6 @@ export default function PNodeStatsGrid({ node, darkMode }: Props) {
       value: formatUptime(node.uptime),
       subtext: `${node.uptime.toLocaleString()}s`,
       color: 'text-blue-400',
-    },
-    {
-      icon: Activity,
-      label: 'Last Seen',
-      value: formatTimeAgo(node.lastSeen),
-      subtext: new Date(node.lastSeen).toLocaleString(),
-      color: 'text-green-400',
     },
     {
       icon: HardDrive,
@@ -76,17 +69,11 @@ export default function PNodeStatsGrid({ node, darkMode }: Props) {
       subtext: `Port ${node.rpcPort}`,
       color: 'text-orange-400',
     },
-    {
-      icon: Cpu,
-      label: 'Response Time',
-      value: `${node.responseTime}ms`,
-      subtext: 'Network latency',
-      color: 'text-pink-400',
-    },
+    
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       {stats.map((stat, idx) => (
         <div
           key={idx}

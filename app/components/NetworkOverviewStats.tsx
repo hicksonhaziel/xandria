@@ -35,7 +35,7 @@ interface Props {
   cardClass: string;
   borderClass: string;
   mutedClass: string;
-}
+} 
 
 export default function NetworkOverviewStats({
   loading,
@@ -81,7 +81,7 @@ export default function NetworkOverviewStats({
         </div>
         <div className="text-2xl font-bold leading-tight">
           {networkStats.avgScore}
-        </div>
+        </div> 
         <div
           className={`text-sm mt-1 ${
             getScoreGrade(parseFloat(networkStats.avgScore)).color
@@ -92,18 +92,18 @@ export default function NetworkOverviewStats({
       </div>
 
       {/* Storage */}
-      <div className={`${cardClass} p-3 rounded-lg border ${borderClass}`}>
-        <div className="flex items-center justify-between mb-1">
-          <span className={mutedClass}>Total Storage</span>
-          <Activity className="w-4 h-4 text-green-400" />
-        </div>
-        <div className="text-2xl font-bold leading-tight">
-          {networkStats.totalStorage} GB
-        </div>
-        <div className="text-sm text-blue-400 mt-1">
-          {networkStats.usedStorage} GB used ({networkStats.utilization}%)
-        </div>
-      </div>
+<div className={`${cardClass} p-3 rounded-lg border ${borderClass}`}>
+  <div className="flex items-center justify-between mb-1">
+    <span className={mutedClass}>Total Storage</span>
+    <Activity className="w-4 h-4 text-green-400" />
+  </div>
+  <div className="text-2xl font-bold leading-tight">
+    {networkStats.totalStorage}
+  </div>
+  <div className="text-sm text-blue-400 mt-1">
+    {networkStats.usedStorage} used ({networkStats.utilization}%)
+  </div>
+</div>
 
       {/* Health */}
       <div className={`${cardClass} p-3 rounded-lg border ${borderClass}`}>

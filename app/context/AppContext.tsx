@@ -1,36 +1,43 @@
 'use client';
-
 import { createContext, useContext, useState, ReactNode, Dispatch, SetStateAction, useEffect } from 'react';
+import type { PNode } from '@/app/types';
 
 type VisualStatus = 'pNodes_Explore' | 'Network_3D' | 'pNodes_Analysis';
+
+interface PNodesState {
+  searchTerm: string;
+  filterStatus: string;
+  sortBy: string;
+  selectedNode: PNode | null;
+  scrollPosition: number;
+}
 
 interface AppContextType {
   darkMode: boolean;
   setDarkMode: Dispatch<SetStateAction<boolean>>;
-  show3DView: boolean;
-  setShow3DView: Dispatch<SetStateAction<boolean>>;
   visualStatus: VisualStatus;
   setVisualStatus: Dispatch<SetStateAction<VisualStatus>>;
+  pnodesState: PNodesState;
+  setPnodesState: Dispatch<SetStateAction<PNodesState>>;
 }
+
+const defaultPNodesState: PNodesState = {
+  searchTerm: '',
+  filterStatus: 'all',
+  sortBy: '',
+  selectedNode: null,
+  scrollPosition: 0,
+};
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  // Initialize from localStorage or use defaults
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('darkMode');
       return saved !== null ? JSON.parse(saved) : true;
     }
     return true;
-  });
-
-  const [show3DView, setShow3DView] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('show3DView');
-      return saved !== null ? JSON.parse(saved) : false;
-    }
-    return false;
   });
 
   const [visualStatus, setVisualStatus] = useState<VisualStatus>(() => {
@@ -41,17 +48,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return 'pNodes_Explore';
   });
 
-  // Save to localStorage whenever state changes
+  const [pnodesState, setPnodesState] = useState<PNodesState>(defaultPNodesState);
+
   useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(darkMode));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('darkMode', JSON.stringify(darkMode));
+    }
   }, [darkMode]);
 
   useEffect(() => {
-    localStorage.setItem('show3DView', JSON.stringify(show3DView));
-  }, [show3DView]);
-
-  useEffect(() => {
-    localStorage.setItem('visualStatus', JSON.stringify(visualStatus));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('visualStatus', JSON.stringify(visualStatus));
+    }
   }, [visualStatus]);
 
   return (
@@ -59,10 +67,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       value={{
         darkMode,
         setDarkMode,
-        show3DView,
-        setShow3DView,
         visualStatus,
         setVisualStatus,
+        pnodesState,
+        setPnodesState,
       }}
     >
       {children}

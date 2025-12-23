@@ -49,7 +49,7 @@ export default function SearchAndFilters({
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className={`w-full pl-10 pr-4 py-2 ${
-              darkMode ? 'bg-gray-800' : 'bg-gray-100'
+              darkMode ? 'bg-[#0B0F14]' : 'bg-gray-100'
             } border ${borderClass} rounded-lg focus:outline-none focus:ring-1 ${
               darkMode ? 'focus:ring-gray-600' : 'focus:ring-gray-300'
             } transition-all text-sm`}

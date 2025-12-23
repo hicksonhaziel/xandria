@@ -6,7 +6,7 @@ interface UsePNodeInfoOptions {
   autoRefresh?: boolean;
 }
 
-export function usePNodeInfo(
+export function usePNodeInfo( 
   pubkey: string, 
   options: UsePNodeInfoOptions = {}
 ) {

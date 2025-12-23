@@ -1,33 +1,37 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAppContext } from '@/app/context/AppContext';
 import { usePNodeInfo } from '@/app/hooks/usePNodeInfo';
 import Header from '@/app/components/Header';
+import Sidebar from '@/app/components/Sidebar';
 import Footer from '@/app/components/Footer';
 import PNodeHeader from '@/app/components/pnode/PNodeHeader';
 import PNodeStatsGrid from '@/app/components/pnode/PNodeStatsGrid';
-import ScoreBreakdown from '@/app/components/pnode/ScoreBreakdown';
-import AdvancedMetrics from '@/app/components/pnode/AdvancedMetrics';
-import NetworkComparison from '@/app/components/pnode/NetworkComparison';
 import Recommendations from '@/app/components/pnode/Recommendations';
 import PNodeCharts from '@/app/components/pnode/PNodeCharts';
-import PNodeCredits from '@/app/components/pnode/PNodeCredits';
 import LiveUpdateIndicator from '@/app/components/pnode/LiveUpdateIndicator';
+import Metrics from '@/app/components/pnode/Metrics';
+import { useSidebarCollapse } from '@/app/hooks/useSidebarCollapse';
 import { Loader2, AlertCircle } from 'lucide-react';
 
+
 export default function PNodeDetailPage() {
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sidebarCollapsed = useSidebarCollapse();
+    
   const params = useParams();
   const nodePubkey = params.nodePubkey as string;
 
   const {
-    darkMode,
-    setDarkMode,
-    show3DView,
-    setShow3DView,
+    darkMode, 
+    setDarkMode, 
     visualStatus,
     setVisualStatus,
   } = useAppContext();
+
 
   // Fetch with auto-refresh every 30 seconds
   const { data, loading, refreshing, error, lastUpdate, refresh } = usePNodeInfo(
@@ -35,23 +39,21 @@ export default function PNodeDetailPage() {
     { refreshInterval: 30000, autoRefresh: true }
   );
 
-  const bgClass = darkMode ? 'bg-gray-900' : 'bg-gray-50';
+  const bgClass = darkMode ? 'bg-[#0B0F14]' : 'bg-gray-50';
   const textClass = darkMode ? 'text-gray-100' : 'text-gray-900';
 
   return (
-    <div className={`min-h-screen ${bgClass} ${textClass} transition-colors duration-300`}>
+    <div ref={containerRef} className={`min-h-screen ${bgClass} ${textClass} transition-colors duration-300`}>
       
-      <div className="text-inherit">
-        <Header 
-          darkMode={darkMode}
-          setDarkMode={setDarkMode}
-          show3DView={show3DView}
-          visualStatus={visualStatus}
-          setShow3DView={setShow3DView}
-          setVisualStatus={setVisualStatus}
-        />
-      </div>
+      <Header />
+      <Sidebar />
       
+      <div 
+        className={`
+          pt-20 px-6 transition-all duration-300
+          ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}
+        `}
+      >
       <div className="container mx-auto px-4 py-8">
         
         {/* Loading state */}
@@ -85,7 +87,7 @@ export default function PNodeDetailPage() {
             {/* Live update indicator */}
             <LiveUpdateIndicator
               lastUpdate={lastUpdate}
-              refreshing={refreshing}
+              refreshing={refreshing} 
               onRefresh={refresh}
               darkMode={darkMode}
             />
@@ -95,33 +97,24 @@ export default function PNodeDetailPage() {
             {/* Charts */}
             <PNodeCharts node={data} darkMode={darkMode} />
             
-            {/* Credits section */}
-            <PNodeCredits darkMode={darkMode} />
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ScoreBreakdown node={data} darkMode={darkMode} />
-              
-              <NetworkComparison 
-                comparison={data.networkComparison} 
-                darkMode={darkMode} 
-              />
-            </div>
-
-            <AdvancedMetrics 
+            {/* Credits and Metrics section - Pass nodePubkey */}
+            <Metrics
+              darkMode={darkMode}
+              nodePubkey={nodePubkey}
               details={data.details} 
-              darkMode={darkMode} 
             />
 
             <Recommendations 
               recommendations={data.recommendations} 
               darkMode={darkMode} 
+              nodeData={data}
             />
           </>
         )}
 
       </div>
-
-      <Footer darkMode={darkMode} />
+      <Footer/>
+      </div>
     </div>
   );
 }

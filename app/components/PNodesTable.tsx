@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Star } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import type { PNode } from '@/app/types';
@@ -12,6 +12,8 @@ interface Props {
   borderClass: string;
   mutedClass: string;
   onSelectNode: (node: PNode) => void;
+  onToggleFavorite?: (node: PNode) => boolean;
+  isFavorited?: (nodeId: string) => boolean;
 }
 
 // Format uptime: seconds -> "2d 5h" or "5h 30m"
@@ -46,23 +48,49 @@ const formatLastSeen = (timestamp: number): string => {
   return `${mins}m ago`;
 };
 
-// Get region from IP using ipapi.co (free, no key needed)
+// Simple cache to avoid re-fetching same IPs
+const regionCache: Record<string, string> = {};
+
+// Get region from IP - cached version
 const fetchRegion = async (ip: string): Promise<string> => {
-  if (!ip) return 'Unknown';
+  if (!ip) return '--';
+  
+  // Check cache first
+  if (regionCache[ip]) {
+    return regionCache[ip];
+  }
   
   try {
-    const res = await fetch(`https://ipapi.co/${ip}/json/`);
+    // Use ip-api.com (free, no key, 45 requests/minute)
+    const res = await fetch(`http://ip-api.com/json/${ip}?fields=countryCode`);
+    if (!res.ok) return '--';
+    
     const data = await res.json();
     
-    // Return country code or city if available
-    if (data.country_code) {
-      return data.city ? `${data.city}, ${data.country_code}` : data.country_code;
+    // Cache and return country code
+    if (data.countryCode) {
+      regionCache[ip] = data.countryCode;
+      // Save to localStorage for persistence
+      localStorage.setItem('ip_cache', JSON.stringify(regionCache));
+      return data.countryCode;
     }
-    return 'Unknown';
+    return '--';
   } catch {
-    return 'Unknown';
+    return '--';
   }
 };
+
+// Load cache from localStorage on mount
+if (typeof window !== 'undefined') {
+  const cached = localStorage.getItem('ip_cache');
+  if (cached) {
+    try {
+      Object.assign(regionCache, JSON.parse(cached));
+    } catch (e) {
+      console.error('Failed to load IP cache:', e);
+    }
+  }
+}
 
 export default function PNodesTable({
   nodes,
@@ -71,10 +99,14 @@ export default function PNodesTable({
   borderClass,
   mutedClass,
   onSelectNode,
+  onToggleFavorite,
+  isFavorited,
 }: Props) {
   const router = useRouter();
   const [visibleCount, setVisibleCount] = useState(20);
   const [regions, setRegions] = useState<Record<string, string>>({});
+
+  const visibleNodes = nodes.slice(0, visibleCount);
 
   // Fetch regions for visible nodes
   useEffect(() => {
@@ -98,14 +130,20 @@ export default function PNodesTable({
     };
     
     loadRegions();
-  }, [visibleCount]); // Re-fetch when showing more nodes
+  }, [visibleCount, visibleNodes, regions]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const visibleNodes = nodes.slice(0, visibleCount);
   const hasMore = visibleCount < nodes.length;
 
   const handleNodeClick = (node: PNode) => {
     onSelectNode(node);
     router.push(`/pnodes/${node.pubkey}`);
+  };
+
+  const handleFavoriteClick = (e: React.MouseEvent, node: PNode) => {
+    e.stopPropagation();
+    if (onToggleFavorite) {
+      onToggleFavorite(node);
+    }
   };
 
   const loadMore = () => {
@@ -124,6 +162,11 @@ export default function PNodesTable({
           <table className="w-full text-sm">
             <thead className={`${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <tr>
+                {onToggleFavorite && (
+                  <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    <Star className="w-4 h-4" />
+                  </th>
+                )}
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Node</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Score</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
@@ -140,7 +183,7 @@ export default function PNodesTable({
                 const grade = node.scoreBreakdown?.grade || 'N/A';
                 const color = node.scoreBreakdown?.color || 'text-gray-400';
                 const score = node.score ?? 0;
-                const region = regions[node.ipAddress] || 'Loading...';
+                const region = regions[node.ipAddress || ''] || '--';
 
                 return (
                   <tr
@@ -148,6 +191,31 @@ export default function PNodesTable({
                     onClick={() => handleNodeClick(node)}
                     className={`hover:${darkMode ? 'bg-gray-700' : 'bg-gray-50'} transition-colors cursor-pointer`}
                   >
+                    {/* Star column */}
+                    {onToggleFavorite && (
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={(e) => handleFavoriteClick(e, node)}
+                          className={`p-1 rounded transition-colors ${
+                            darkMode ? 'hover:bg-yellow-500/20' : 'hover:bg-yellow-100'
+                          }`}
+                          title={
+                            isFavorited?.(node.id)
+                              ? 'Remove from favorites'
+                              : 'Add to favorites'
+                          }
+                        >
+                          <Star
+                            className={`w-4 h-4 ${
+                              isFavorited?.(node.id)
+                                ? 'text-yellow-500 fill-yellow-500'
+                                : mutedClass
+                            }`}
+                          />
+                        </button>
+                      </td>
+                    )}
+
                     {/* Node - compact */}
                     <td className="px-4 py-3">
                       <div className="flex flex-col">
@@ -269,7 +337,7 @@ export default function PNodesTable({
           const grade = node.scoreBreakdown?.grade || 'N/A';
           const color = node.scoreBreakdown?.color || 'text-gray-400';
           const score = node.score ?? 0;
-          const region = regions[node.ipAddress] || 'Loading...';
+          const region = regions[node.ipAddress || ''] || '--';
 
           return (
             <div
@@ -277,10 +345,33 @@ export default function PNodesTable({
               onClick={() => handleNodeClick(node)}
               className={`${cardClass} rounded-lg border ${borderClass} p-4 cursor-pointer hover:${
                 darkMode ? 'bg-gray-700' : 'bg-gray-50'
-              } transition-colors`}
+              } transition-colors relative`}
             >
+              {/* Star button - top right */}
+              {onToggleFavorite && (
+                <button
+                  onClick={(e) => handleFavoriteClick(e, node)}
+                  className={`absolute top-4 right-4 p-1 rounded transition-colors ${
+                    darkMode ? 'hover:bg-yellow-500/20' : 'hover:bg-yellow-100'
+                  }`}
+                  title={
+                    isFavorited?.(node.id)
+                      ? 'Remove from favorites'
+                      : 'Add to favorites'
+                  }
+                >
+                  <Star
+                    className={`w-5 h-5 ${
+                      isFavorited?.(node.id)
+                        ? 'text-yellow-500 fill-yellow-500'
+                        : mutedClass
+                    }`}
+                  />
+                </button>
+              )}
+
               {/* Header */}
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-3 pr-8">
                 <div>
                   <h3 className="font-semibold text-sm">{node.id}</h3>
                   <p className={`text-xs ${mutedClass} font-mono`}>

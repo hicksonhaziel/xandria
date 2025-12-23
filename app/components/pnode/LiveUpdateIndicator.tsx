@@ -28,7 +28,7 @@ export default function LiveUpdateIndicator({
 
   return (
     <div className={`flex items-center gap-4 mb-4 px-4 py-2 rounded-lg ${
-      darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-gray-100 border border-gray-200'
+      darkMode ? 'bg-[#111827] border border-gray-700' : 'bg-gray-100 border border-gray-200'
     }`}>
       
       {/* Live indicator */}
@@ -61,10 +61,7 @@ export default function LiveUpdateIndicator({
         Refresh
       </button>
 
-      {/* Auto-refresh notice */}
-      <span className="text-xs text-gray-500">
-        Auto-refresh: 30s
-      </span>
+      
     </div>
   );
 }

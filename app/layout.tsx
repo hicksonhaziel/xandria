@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { AppProvider } from './context/AppContext';
 import { Geist, Geist_Mono } from "next/font/google";
+import { AppProvider } from "./context/AppContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,22 +14,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Xandviz",
-  description: "Xandeum Nextwork Analytics & Visualizer.",
+  title: "Xandria - Xandeum Network Analytics & Visualizer",
+  description: "Xandeum Network pNodes Analytics & Visualizer.",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AppProvider>
-         {children}
+          {children}
         </AppProvider>
       </body>
     </html>

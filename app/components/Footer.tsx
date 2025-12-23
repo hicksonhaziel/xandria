@@ -1,10 +1,10 @@
+"use client"
 import React from 'react';
+import { useAppContext } from '@/app/context/AppContext';
 
-interface FooterProps {
-  darkMode: boolean;
-}
+const Footer: React.FC = () => {
+  const { darkMode } = useAppContext();
 
-const Footer: React.FC<FooterProps> = ({ darkMode }) => {
   const cardClass = darkMode 
     ? 'bg-gray-800 bg-opacity-50 backdrop-blur-lg' 
     : 'bg-white bg-opacity-70 backdrop-blur-lg';
