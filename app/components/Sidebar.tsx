@@ -23,12 +23,6 @@ const navItems: NavItem[] = [
     visualState: "pNodes_Explore"
   },
   { 
-    id: "pnodes", 
-    label: "pNodes", 
-    icon: Server, 
-    routes: ["/pnodes"]
-  },
-  { 
     id: "analysis", 
     label: "Analysis", 
     icon: ChartBar, 
