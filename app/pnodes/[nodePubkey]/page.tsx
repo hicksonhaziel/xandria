@@ -51,7 +51,7 @@ export default function PNodeDetailPage() {
       <div 
         className={`
           pt-20 px-6 transition-all duration-300
-          ${sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'}
+          ml-[4.5rem] lg:ml-64
         `}
       >
       <div className="container mx-auto px-4 py-8">

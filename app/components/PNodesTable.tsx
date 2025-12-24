@@ -2,8 +2,9 @@
 
 import { AlertCircle, Star } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { PNode } from '@/app/types';
+import { useLocations } from '@/app/hooks/useLocations';
 
 interface Props {
   nodes: PNode[];
@@ -48,50 +49,6 @@ const formatLastSeen = (timestamp: number): string => {
   return `${mins}m ago`;
 };
 
-// Simple cache to avoid re-fetching same IPs
-const regionCache: Record<string, string> = {};
-
-// Get region from IP - cached version
-const fetchRegion = async (ip: string): Promise<string> => {
-  if (!ip) return '--';
-  
-  // Check cache first
-  if (regionCache[ip]) {
-    return regionCache[ip];
-  }
-  
-  try {
-    // Use ip-api.com (free, no key, 45 requests/minute)
-    const res = await fetch(`http://ip-api.com/json/${ip}?fields=countryCode`);
-    if (!res.ok) return '--';
-    
-    const data = await res.json();
-    
-    // Cache and return country code
-    if (data.countryCode) {
-      regionCache[ip] = data.countryCode;
-      // Save to localStorage for persistence
-      localStorage.setItem('ip_cache', JSON.stringify(regionCache));
-      return data.countryCode;
-    }
-    return '--';
-  } catch {
-    return '--';
-  }
-};
-
-// Load cache from localStorage on mount
-if (typeof window !== 'undefined') {
-  const cached = localStorage.getItem('ip_cache');
-  if (cached) {
-    try {
-      Object.assign(regionCache, JSON.parse(cached));
-    } catch (e) {
-      console.error('Failed to load IP cache:', e);
-    }
-  }
-}
-
 export default function PNodesTable({
   nodes,
   darkMode,
@@ -104,33 +61,13 @@ export default function PNodesTable({
 }: Props) {
   const router = useRouter();
   const [visibleCount, setVisibleCount] = useState(20);
-  const [regions, setRegions] = useState<Record<string, string>>({});
 
+  // Extract IPs from visible nodes
   const visibleNodes = nodes.slice(0, visibleCount);
+  const ips = visibleNodes.map(node => node.ipAddress).filter(Boolean) as string[];
 
-  // Fetch regions for visible nodes
-  useEffect(() => {
-    const loadRegions = async () => {
-      const newRegions: Record<string, string> = {};
-      
-      // Batch fetch only for nodes we don't have yet
-      const nodesToFetch = visibleNodes.filter(
-        node => node.ipAddress && !regions[node.ipAddress]
-      );
-      
-      for (const node of nodesToFetch.slice(0, 5)) { // Rate limit: 5 at a time
-        if (node.ipAddress) {
-          newRegions[node.ipAddress] = await fetchRegion(node.ipAddress);
-        }
-      }
-      
-      if (Object.keys(newRegions).length > 0) {
-        setRegions(prev => ({ ...prev, ...newRegions }));
-      }
-    };
-    
-    loadRegions();
-  }, [visibleCount, visibleNodes, regions]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Fetch locations for visible nodes (will re-fetch when ips array changes)
+  const { getLocation } = useLocations(ips);
 
   const hasMore = visibleCount < nodes.length;
 
@@ -173,7 +110,7 @@ export default function PNodesTable({
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Uptime</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Last Seen</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Storage</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Region</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Location</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Ver</th>
               </tr>
             </thead>
@@ -183,7 +120,7 @@ export default function PNodesTable({
                 const grade = node.scoreBreakdown?.grade || 'N/A';
                 const color = node.scoreBreakdown?.color || 'text-gray-400';
                 const score = node.score ?? 0;
-                const region = regions[node.ipAddress || ''] || '--';
+                const location = node.ipAddress ? getLocation(node.ipAddress) : null;
 
                 return (
                   <tr
@@ -273,9 +210,27 @@ export default function PNodesTable({
                       </div>
                     </td>
 
-                    {/* Region */}
+                    {/* Location - Flag + Country */}
                     <td className="px-4 py-3">
-                      <span className="text-xs">{region}</span>
+                      {location ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg" title={location.countryName}>
+                            {location.flag}
+                          </span>
+                          <div className="flex flex-col">
+                            <span className="text-xs font-medium">
+                              {location.countryName}
+                            </span>
+                            {location.city && (
+                              <span className={`text-xs ${mutedClass}`}>
+                                {location.city}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className={`text-xs ${mutedClass}`}>--</span>
+                      )}
                     </td>
 
                     {/* Version - compact */}
@@ -337,7 +292,7 @@ export default function PNodesTable({
           const grade = node.scoreBreakdown?.grade || 'N/A';
           const color = node.scoreBreakdown?.color || 'text-gray-400';
           const score = node.score ?? 0;
-          const region = regions[node.ipAddress || ''] || '--';
+          const location = node.ipAddress ? getLocation(node.ipAddress) : null;
 
           return (
             <div
@@ -420,8 +375,15 @@ export default function PNodesTable({
                   <p className="font-medium">{formatLastSeen(node.lastSeen)}</p>
                 </div>
                 <div>
-                  <p className={`${mutedClass} mb-1`}>Region</p>
-                  <p className="font-medium">{region}</p>
+                  <p className={`${mutedClass} mb-1`}>Location</p>
+                  {location ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-base">{location.flag}</span>
+                      <p className="font-medium text-xs">{location.countryName}</p>
+                    </div>
+                  ) : (
+                    <p className="font-medium">--</p>
+                  )}
                 </div>
                 <div>
                   <p className={`${mutedClass} mb-1`}>Version</p>

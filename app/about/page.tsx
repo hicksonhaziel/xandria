@@ -106,7 +106,7 @@ const AboutPage = () => {
       <div 
         className={`
           pt-20 px-6 transition-all duration-200
-          ${sidebarCollapsed ? 'lg:ml-[4.5rem]' : 'lg:ml-64'}
+         ml-[4.5rem] lg:ml-64
         `}
       >
         <div className="container mx-auto px-4 py-8 max-w-4xl">

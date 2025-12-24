@@ -1,7 +1,8 @@
 'use client';
 
-import { Server, Clock, HardDrive, Activity, Cpu, Wifi } from 'lucide-react';
+import { Server, Clock, HardDrive, Activity, Cpu, MapPin } from 'lucide-react';
 import type { PNodeDetailResponse } from '@/app/types/pnode-detail';
+import { useLocation } from '@/app/hooks/useLocations';
 
 interface Props {
   node: PNodeDetailResponse['data'];
@@ -24,21 +25,13 @@ const formatUptime = (seconds: number): string => {
   return `${hours}h`;
 };
 
-// Format time ago
-const formatTimeAgo = (timestamp: number): string => {
-  const diff = Date.now() - timestamp;
-  const mins = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-  if (days > 0) return `${days}d ago`;
-  if (hours > 0) return `${hours}h ago`;
-  return `${mins}m ago`;
-};
-
 export default function PNodeStatsGrid({ node, darkMode }: Props) {
   const cardClass = darkMode ? 'bg-[#111827]' : 'bg-white';
   const borderClass = darkMode ? 'border-gray-700' : 'border-gray-200';
   const mutedClass = darkMode ? 'text-gray-400' : 'text-gray-600';
+
+  // Fetch location for this node
+  const { location, loading: locationLoading } = useLocation(node.ipAddress);
 
   const stats = [
     {
@@ -63,13 +56,31 @@ export default function PNodeStatsGrid({ node, darkMode }: Props) {
       color: 'text-yellow-400',
     },
     {
-      icon: Wifi,
-      label: 'IP Address',
-      value: node.ipAddress || 'Hidden',
-      subtext: `Port ${node.rpcPort}`,
-      color: 'text-orange-400',
+      icon: MapPin,
+      label: 'Location',
+      value: location ? (
+        <div className="flex items-center gap-2">
+          <span className="text-2xl leading-none">{location.flag}</span>
+          <div className="flex flex-col">
+            <span className="text-lg font-bold leading-tight">
+              {location.countryName}
+            </span>
+            {location.city && (
+              <span className={`text-xs ${mutedClass} leading-tight mt-0.5`}>
+                {location.city}
+              </span>
+            )}
+          </div>
+        </div>
+      ) : locationLoading ? (
+        <span className="text-lg">...</span>
+      ) : (
+        <span className="text-lg">Unknown</span>
+      ),
+      subtext: location?.isp || (node.ipAddress || 'No IP'),
+      color: 'text-green-400',
+      isCustomValue: true, // Flag to render value as-is
     },
-    
   ];
 
   return (
@@ -83,7 +94,15 @@ export default function PNodeStatsGrid({ node, darkMode }: Props) {
             <span className={`text-sm ${mutedClass}`}>{stat.label}</span>
             <stat.icon className={`w-5 h-5 ${stat.color}`} />
           </div>
-          <div className="text-xl font-bold mb-1">{stat.value}</div>
+          <div className="mb-1">
+            {stat.isCustomValue ? (
+              // Render custom JSX value
+              stat.value
+            ) : (
+              // Render string value
+              <div className="text-xl font-bold">{stat.value}</div>
+            )}
+          </div>
           <div className={`text-xs ${mutedClass}`}>{stat.subtext}</div>
         </div>
       ))}

@@ -60,17 +60,25 @@ export default function LeaderboardPage() {
     return `${gb.toFixed(2)} GB`;
   };
 
-  const formatUptime = (uptimePercent: number) => {
-    // Assuming uptime is stored as percentage (0-100)
-    // Convert to approximate days/hours
-    const totalHours = (uptimePercent / 100) * 720; // Assuming 30 days max
-    const days = Math.floor(totalHours / 24);
-    const hours = Math.floor(totalHours % 24);
+  const formatUptime = (uptimeValue: number) => {
+    // If uptime is a percentage (0-100), show it as percentage
+    if (uptimeValue <= 100) {
+      return `${uptimeValue.toFixed(1)}%`;
+    }
+    
+    // If uptime is in seconds
+    const seconds = uptimeValue;
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
     
     if (days > 0) {
       return `${days}d ${hours}h`;
     }
-    return `${hours}h`;
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
   };
 
   const getScoreGrade = (score: number) => {
@@ -122,7 +130,7 @@ export default function LeaderboardPage() {
       <Header />
       <Sidebar />
 
-      <div className={`pt-20 px-6 transition-all duration-200 ${sidebarCollapsed ? 'lg:ml-[4.5rem]' : 'lg:ml-64'}`}>
+      <div className={`pt-20 px-6 transition-all duration-200 ml-[4.5rem] lg:ml-64`}>
         <div className="container mx-auto px-4 py-8 max-w-6xl">
           
           {/* Header */}
@@ -275,6 +283,7 @@ export default function LeaderboardPage() {
               </div>
             )}
           </div>
+
           {/* Footer Info */}
           <div className="mt-4 text-center">
             <p className={`text-xs ${mutedClass}`}>
