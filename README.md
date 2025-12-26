@@ -125,16 +125,16 @@ Open [http://localhost:3000](http://localhost:3000) to see the application.
 
 ```env
 # Required
-GROQ_API_KEY=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
-UPSTASH_REDIS_REST_URL="https://national-moth-48062.upstash.io"
-UPSTASH_REDIS_REST_TOKEN="Abu-AAIncDE1OGM3MTMwZDZmYzk0ZWU0YTgwMTRjNzFiZDI4NGY5MHAxNDgwNjI"
+GROQ_API_KEY=
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
 
 # Cron Job Authentication
 CRON_SECRET_TOKEN=your_super_secret_token_here_generate_a_strong_one
 
 # API Base URL
-NEXT_PUBLIC_API_URL=http://localhost:3000
-NEXT_PUBLIC_XANDEUM_RPC_ENDPOINT='http://173.212.203.145:6000/rpc'
+NEXT_PUBLIC_API_URL=your api url
+NEXT_PUBLIC_XANDEUM_RPC_ENDPOINT=
 ```
 
 ---
