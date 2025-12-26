@@ -269,7 +269,6 @@ const XandViz = () => {
     );
   }
 
-  
 
   return (
     <div ref={containerRef} className={`min-h-screen ${bgClass} ${textClass} transition-colors duration-300`}>
@@ -300,7 +299,7 @@ const XandViz = () => {
                   Discover and analyze your pNodes with powerful search and filtering tools
                 </p>
               </div>
-
+              
               <NetworkOverviewStats
                 loading={loading}
                 networkStats={networkStats}

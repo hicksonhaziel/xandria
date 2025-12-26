@@ -85,7 +85,7 @@ export default function PNodeDetailPage() {
             <PNodeHeader node={data} darkMode={darkMode} />
             
             {/* Live update indicator */}
-            <LiveUpdateIndicator
+            <LiveUpdateIndicator 
               lastUpdate={lastUpdate}
               refreshing={refreshing} 
               onRefresh={refresh}

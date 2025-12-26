@@ -4,6 +4,7 @@ import { redis } from '@/app/lib/redis';
 
 const CACHE_TTL = 60; // 1 minute for leaderboard
 const METRICS_TTL = 172800; // 48 hours for node metrics
+const NODE_SCORE_TTL = 60 * 5; // 5 minutes
 
 interface NodeMetrics {
   pubkey: string;
@@ -20,6 +21,7 @@ interface LeaderboardEntry {
   storage: number;
   rank: number;
 }
+
 
 export class RedisService {
   // Helper to safely parse data from Redis
@@ -181,5 +183,18 @@ export class RedisService {
       console.error('Failed to get network stats from cache:', error);
       return null;
     }
+  }
+
+  static async cacheNodeScore(pubkey: string, score: number) {
+    await redis.set(
+      `node:score:${pubkey}`,
+      score.toString(),
+      { ex: NODE_SCORE_TTL }
+    );
+  }
+
+  static async getNodeScore(pubkey: string): Promise<number | null> {
+    const value = await redis.get(`node:score:${pubkey}`);
+    return value ? Number(value) : null;
   }
 }
