@@ -1,0 +1,17 @@
+name: Xandria Analytics Cron
+
+on:
+  schedule:
+    - cron: "*/10 * * * *" # every 10 minutes
+  workflow_dispatch:
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Call analytics endpoint
+        run: |
+          curl -X POST https://xandria-eight.vercel.app/api/analytics/collect \
+            -H "Authorization: Bearer your_super_secret_token_here_generate_a_strong_onee"
