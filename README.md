@@ -1,10 +1,10 @@
-#Xandria - Advanced Xandeum pNode Analytics Platform
+# Xandria - Advanced Xandeum pNode Analytics Platform
 
-![XandViz Banner](https://via.placeholder.com/1200x300/7c3aed/ffffff?text=XandViz+Analytics+Platform)
+![XandViz Banner](https://xandria-eight.vercel.app/xandria.png)
 
 > **Submission for:** Xandeum pNode Analytics Platform Bounty  
 > **Built by:** Hickson Haziel 
-> **Live Demo:** [https://xandria-app.vercel.app](https://xandria-app.vercel.app)  
+> **Live Demo:** [https://xandria-eight.vercel.app](https://xandria-eight.vercel.app)  
 > **Demo Video:** [Link to video]
 
 ---
@@ -53,12 +53,15 @@ Xandria is a next-generation analytics platform for Xandeum pNodes that goes bey
 **Backend:**
 - Next.js API routes
 - Uptash Redis for real-time updates
-- Axios for HTTP requests
+- HTTP requests
 
 **Deployment:**
 - Vercel (serverless)
 - Automatic CI/CD
 - Edge caching
+
+**Cron job:**
+- Github workflows cron job
 
 ### System Architecture
 
@@ -157,8 +160,11 @@ Open [http://localhost:3000](http://localhost:3000) to see the application.
    # Get specific pNode
    curl https://xandviz.vercel.app/api/pnodes/[pubkey]
    
-   # Get network stats
-   curl https://xandviz.vercel.app/api/stats
+   # Get pNode xandscore™
+   curl https://xandviz.vercel.app/api/xandscore/[pubkey]
+
+   # Get historic data of pNode
+   curl https://xandviz.vercel.app/api/analytics/node/[pubkey]
    ```
 
 ---
@@ -203,22 +209,28 @@ Interactive Three.js-powered visualization showing:
 
 ### Real-Time Updates
 
-XandViz maintains WebSocket connection to gossip protocol for:
+Xandria maintains WebSocket connection to gossip protocol for:
 - Live pNode status changes
 - Performance metric updates
 - Network events
 - Connection changes
 
-Update frequency: Every 5 seconds
+Update frequency: Every 30 seconds
+
+### Historical Data Keep
+
+Xandria stors a node data for 7 days for:
+- Node performance tracking
+- Performance metric updates
+- Connection changes over time
+
+Update frequency: Every 30 seconds
 
 ---
 
 ## 🔌 API Documentation
 
-### Base URL
-```
-https://xandviz.vercel.app/api
-```
+
 
 ### Endpoints
 
@@ -233,19 +245,44 @@ GET /api/pnodes
   "success": true,
   "data": [
     {
-      "id": "pnode-1",
-      "pubkey": "abc123...",
-      "version": "0.4.0",
+      "id": "pnode-EcTqXgB6",
+      "pubkey": "EcTqXgB6VJStAtBZAXcjLHf5ULj41H1PFZQ17zKosbhL",
+      "version": "0.8.0",
+      "responseTime": 0,
       "status": "active",
-      "score": 95.5,
-      "uptime": 99.8,
-      "responseTime": 45,
-      "storageCapacity": 1000,
-      "storageUsed": 450,
-      "location": "US-East"
-    }
+      "uptime": 1170196,
+      "lastSeen": 1766940033000,
+      "rpcPort": 6000,
+      "ipAddress": "173.212.207.32",
+      "isPublic": true,
+      "storageCommitted": 340000000000,
+      "storageUsed": 50591,
+      "storageUsagePercent": 0.000014879705882352,
+      "scoreBreakdown": {
+        "total": 83.7,
+        "uptime": 30,
+        "responseTime": 24.3,
+        "storage": 4.4,
+        "version": 15,
+        "reliability": 10,
+        "grade": "B",
+        "color": "text-blue-500"
+      },
+      "score": 83.7
+    }  
   ],
-  "count": 50
+  "count": 252,
+  "stats": {
+    "total": 252,
+    "active": 199,
+    "syncing": 5,
+    "offline": 48,
+    "avgScore": 68.0198412698413,
+    "totalStorage": 387995421228845,
+    "usedStorage": 5009305878
+  },
+  "cached": false,
+  "timestamp": 1766940041012
 }
 ```
 
@@ -254,42 +291,146 @@ GET /api/pnodes
 GET /api/pnodes/[pubkey]
 ```
 
-#### Get Network Statistics
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "pnode-74h474xG",
+    "pubkey": "74h474xGaHCeJdofjdGU12oNuBYf8oQRvBAkReQ2K8L6",
+    "version": "0.8.0",
+    "responseTime": 0,
+    "status": "active",
+    "uptime": 1204892,
+    "lastSeen": 1766940246000,
+    "rpcPort": 6000,
+    "ipAddress": "161.97.181.230",
+    "isPublic": false,
+    "storageCommitted": 368000000000,
+    "storageUsed": 55210,
+    "storageUsagePercent": 0.000015002717391304,
+    "private": true,
+    "scoreBreakdown": {
+      "total": 84.3,
+      "uptime": 30,
+      "responseTime": 24.5,
+      "storage": 4.8,
+      "version": 15,
+      "reliability": 10,
+      "grade": "B",
+      "color": "text-blue-500"
+    },
+    "score": 84.3,
+    "networkComparison": {
+      "uptimePercentile": 89,
+      "storagePercentile": 85,
+      "networkAverage": {
+        "uptime": 748137.370517928,
+        "storage": 1545297545062.17,
+        "activeNodeCount": 209
+      },
+      "totalNodes": 251
+    },
+    "recommendations": []
+  },
+  "cached": false,
+  "timestamp": 1766940251656
+}
+```
+#### Get pNode xandscore
 ```http
-GET /api/stats
+GET /api/xandscore/[pubkey]
 ```
 
 **Response:**
 ```json
 {
-  "total": 50,
-  "active": 45,
-  "syncing": 3,
-  "offline": 2,
-  "avgScore": 87.3,
-  "totalStorage": 50000,
-  "usedStorage": 22500
+  "xandscore": {
+    "score": 84.6,
+    "pubkey": "74h474xGaHCeJdofjdGU12oNuBYf8oQRvBAkReQ2K8L6"
+  }
+}
+```
+
+#### Get Historical data of a pNode
+```http
+GET /api/analytics/node/[pubkey]
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "pubkey": "74h474xGaHCeJdofjdGU12oNuBYf8oQRvBAkReQ2K8L6",
+    "history": [
+      {
+        "timestamp": 1766706300344,
+        "uptime": 970791,
+        "score": 82.4,
+        "storageCommitted": 368000000000,
+        "storageUsed": 55210,
+        "storageUsagePercent": 0.000015002717391304
+      },
+      {
+        "timestamp": 1766713838663,
+        "uptime": 978279,
+        "score": 80.8,
+        "storageCommitted": 368000000000,
+        "storageUsed": 55210,
+        "storageUsagePercent": 0.000015002717391304
+      },
+    ],
+    "stats": {
+      "dataPoints": 18,
+      "timeRange": {
+        "start": 1766706300344,
+        "end": 1766938408336
+      },
+      "metrics": {
+        "uptime": {
+          "min": 970791,
+          "max": 1202991,
+          "avg": 1174413,
+          "current": 1202991,
+          "previous": 970791,
+          "change": 232200
+        },
+        "score": {
+          "min": 80.8,
+          "max": 84.2,
+          "avg": 82.7333333333333,
+          "current": 81.6,
+          "previous": 82.4,
+          "change": -0.800000000000011
+        },
+        "xanScore": {
+          "min": 81.6,
+          "max": 84.2,
+          "avg": 82.7125,
+          "current": 81.6,
+          "previous": 83.3,
+          "change": -1.7
+        },
+        "cpuPercent": null,
+        "ramPercent": null,
+        "storagePercent": {
+          "min": 0.000015002717391304,
+          "max": 0.000015002717391304,
+          "avg": 0.000015002717391304,
+          "current": 0.000015002717391304,
+          "previous": 0.000015002717391304,
+          "change": 0
+        }
+      }
+    }
+  }
 }
 ```
 
 ---
 
-## 🧪 Testing
 
-### Unit Tests
-```bash
-npm run test
-```
-
-### E2E Tests
-```bash
-npm run test:e2e
-```
-
-### Performance Tests
-```bash
-npm run lighthouse
-```
 
 ---
 
@@ -312,16 +453,6 @@ npm run lighthouse
    ```bash
    vercel --prod
    ```
-
-### Alternative: Docker
-
-```bash
-# Build image
-docker build -t xandviz .
-
-# Run container
-docker run -p 3000:3000 xandviz
-```
 
 ---
 
@@ -361,10 +492,9 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ## 📞 Contact & Support
 
-- **GitHub Issues**: [Report bugs or request features](https://github.com/yourusername/xandviz/issues)
 - **Discord**: Join [Xandeum Discord](https://discord.gg/uqRSmmM5m)
-- **Email**: your.email@example.com
-- **Twitter**: [@yourhandle](https://twitter.com/yourhandle)
+- **Email**: hicksonhaziel@gmail.com
+- **Twitter**: [@devhickson](https://twitter.com/devhickson)
 
 ---
 
@@ -375,9 +505,10 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - [x] XandScore™ algorithm
 - [x] 3D visualization
 - [x] Real-time updates
+- [x] Historical data tracking
 
 ### Phase 2 (Next 2 weeks)
-- [ ] Historical data tracking
+
 - [ ] Performance predictions
 - [ ] Alert system for operators
 - [ ] Mobile app (React Native)
@@ -390,29 +521,6 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-## 📊 Project Stats
-
-- **Lines of Code**: ~3,500
-- **Components**: 15+
-- **API Endpoints**: 5
-- **Test Coverage**: 85%
-- **Performance Score**: 98/100 (Lighthouse)
-- **Accessibility Score**: 100/100
-
----
-
-## 🏆 Why XandViz Should Win
-
-1. **Exceeds Requirements**: Goes beyond basic pNode display with scoring, 3D viz, and analytics
-2. **Production Ready**: Fully deployed, tested, and documented
-3. **Innovation**: Unique XandScore™ algorithm and 3D network visualization
-4. **User-Centric**: Intuitive UI/UX with operator tools and insights
-5. **Ecosystem Value**: Public API enables third-party integrations
-6. **Maintainable**: Clean code, comprehensive tests, excellent documentation
-7. **Scalable**: Architecture ready for thousands of pNodes
-8. **Open Source**: MIT license, welcoming contributions
-
----
 
 **Built with ❤️ for the Xandeum Community**
 
@@ -423,23 +531,22 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## 📸 Screenshots
 
 ### Dashboard
-![Dashboard](public/screenshots/dashboard.png)
+![Dashboard](https://xandria-eight.vercel.app/Dashboard.png)
 
 ### 3D Network View
-![3D View](public/screenshots/3d-network.png)
+![3D View](https://xandria-eight.vercel.app/3d.png)
 
 ### pNode Details
-![Details](public/screenshots/pnode-details.png)
+![Details](https://xandria-eight.vercel.app/Dashboard.png)
 
-### Dark Mode
-![Dark Mode](public/screenshots/dark-mode.png)
+### Light Mode
+![Ligt Mode](https://xandria-eight.vercel.app/Lmode.png)
 
 ---
 
 ## 🔗 Links
 
-- **Live Demo**: https://xandviz.vercel.app
-- **GitHub**: https://github.com/yourusername/xandviz
+- **Live Demo**: https://xandria-eight.vercel.app
+- **GitHub**: https://github.com/hicksonhaziel/xandria
 - **Demo Video**: [YouTube link]
-- **API Docs**: https://xandviz.vercel.app/docs
 - **Xandeum Network**: https://xandeum.network
