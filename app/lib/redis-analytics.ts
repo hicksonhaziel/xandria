@@ -1,4 +1,3 @@
-// lib/redis-analytics.ts
 import { redis } from './redis'
 
 interface NodeMetrics {
@@ -38,18 +37,12 @@ export class RedisAnalyticsService {
       ...metrics
     }
 
-    // Add to sorted set with timestamp as score
+    // Single command with ZADD and expiration handled separately
     await redis.zadd(key, {
       score: timestamp,
       member: JSON.stringify(snapshot)
     })
-
-    // Set expiration to 2 months
     await redis.expire(key, TWO_MONTHS_TTL)
-
-    // Clean up old entries (older than 7 days)
-    const sevenDaysAgo = timestamp - (SEVEN_DAYS_TTL * 1000)
-    await redis.zremrangebyscore(key, '-inf', sevenDaysAgo)
   }
 
   // Store pod credits snapshot
@@ -72,10 +65,6 @@ export class RedisAnalyticsService {
     })
 
     await redis.expire(key, TWO_MONTHS_TTL)
-
-    // Clean up old entries (older than 7 days)
-    const sevenDaysAgo = timestamp - (SEVEN_DAYS_TTL * 1000)
-    await redis.zremrangebyscore(key, '-inf', sevenDaysAgo)
   }
 
   // Get historical metrics for a node
@@ -94,7 +83,6 @@ export class RedisAnalyticsService {
     
     if (!data || data.length === 0) return []
 
-    // Handle both string and object responses from Upstash
     return data.map((item) => {
       if (typeof item === 'string') {
         return JSON.parse(item) as NodeMetrics
@@ -119,7 +107,6 @@ export class RedisAnalyticsService {
     
     if (!data || data.length === 0) return []
 
-    // Handle both string and object responses from Upstash
     return data.map((item) => {
       if (typeof item === 'string') {
         return JSON.parse(item) as PodCredits
@@ -177,14 +164,16 @@ export class RedisAnalyticsService {
     return { current, previous, change, percentChange }
   }
 
-  // Batch store multiple nodes (for cron job efficiency)
+  
   static async batchStoreNodeMetrics(
     nodes: Array<{ pubkey: string; metrics: Omit<NodeMetrics, 'timestamp'> }>
   ): Promise<void> {
+    if (nodes.length === 0) return
+    
     const pipeline = redis.pipeline()
     const timestamp = Date.now()
-    const sevenDaysAgo = timestamp - (SEVEN_DAYS_TTL * 1000)
 
+    // Only ZADD - expiration is set once during initialization
     for (const { pubkey, metrics } of nodes) {
       const key = `node:metrics:${pubkey}`
       const snapshot: NodeMetrics = { timestamp, ...metrics }
@@ -193,20 +182,19 @@ export class RedisAnalyticsService {
         score: timestamp,
         member: JSON.stringify(snapshot)
       })
-      pipeline.expire(key, TWO_MONTHS_TTL)
-      pipeline.zremrangebyscore(key, '-inf', sevenDaysAgo)
     }
 
     await pipeline.exec()
   }
 
-  // Batch store multiple pod credits (for cron job efficiency)
+  
   static async batchStorePodCredits(
     pods: Array<{ podId: string; credits: number }>
   ): Promise<void> {
+    if (pods.length === 0) return
+    
     const pipeline = redis.pipeline()
     const timestamp = Date.now()
-    const sevenDaysAgo = timestamp - (SEVEN_DAYS_TTL * 1000)
 
     for (const { podId, credits } of pods) {
       const key = `pod:credits:${podId}`
@@ -216,10 +204,49 @@ export class RedisAnalyticsService {
         score: timestamp,
         member: JSON.stringify(snapshot)
       })
-      pipeline.expire(key, TWO_MONTHS_TTL)
-      pipeline.zremrangebyscore(key, '-inf', sevenDaysAgo)
     }
 
+    await pipeline.exec()
+  }
+
+  //  Initialize expiration for all keys (run once, or when adding new nodes)
+  static async initializeExpirations(): Promise<void> {
+    const nodeKeys = await redis.keys('node:metrics:*')
+    const podKeys = await redis.keys('pod:credits:*')
+    
+    const pipeline = redis.pipeline()
+    
+    for (const key of nodeKeys) {
+      pipeline.expire(key, TWO_MONTHS_TTL)
+    }
+    
+    for (const key of podKeys) {
+      pipeline.expire(key, TWO_MONTHS_TTL)
+    }
+    
+    await pipeline.exec()
+  }
+
+  // Run cleanup 
+  static async cleanupOldData(): Promise<void> {
+    
+    const sevenDaysAgo = Date.now() - (SEVEN_DAYS_TTL * 1000)
+    
+    // Get all node keys
+    const nodeKeys = await redis.keys('node:metrics:*')
+    const podKeys = await redis.keys('pod:credits:*')
+    
+    const pipeline = redis.pipeline()
+    
+    // Clean up old entries from all keys
+    for (const key of nodeKeys) {
+      pipeline.zremrangebyscore(key, '-inf', sevenDaysAgo)
+    }
+    
+    for (const key of podKeys) {
+      pipeline.zremrangebyscore(key, '-inf', sevenDaysAgo)
+    }
+    
     await pipeline.exec()
   }
 
