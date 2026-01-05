@@ -156,7 +156,17 @@ export default function PNodesTable({
                     {/* Node - compact */}
                     <td className="px-4 py-3">
                       <div className="flex flex-col">
-                        <span className="font-medium text-xs">{node.id}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-xs">{node.id}</span>
+                          {node.uptime < 86400 && (
+                            <span
+                              className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 text-[10px] font-bold rounded uppercase"
+                              title="New pNode created under 24hrs ago"
+                            >
+                              NEW
+                            </span>
+                          )}
+                        </div>
                         <span className={`text-xs ${mutedClass} font-mono`}>
                           {node.pubkey.slice(0, 8)}...
                         </span>
@@ -328,7 +338,17 @@ export default function PNodesTable({
               {/* Header */}
               <div className="flex items-center justify-between mb-3 pr-8">
                 <div>
-                  <h3 className="font-semibold text-sm">{node.id}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-sm">{node.id}</h3>
+                    {node.uptime < 86400 && (
+                      <span
+                        className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 text-[10px] font-bold rounded uppercase"
+                        title="New pNode created under 24hrs ago"
+                      >
+                        NEW
+                      </span>
+                    )}
+                  </div>
                   <p className={`text-xs ${mutedClass} font-mono`}>
                     {node.pubkey.slice(0, 16)}...
                   </p>

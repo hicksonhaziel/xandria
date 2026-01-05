@@ -17,7 +17,7 @@ export function useFilteredPNodes(
       }
     });
     const uniqueNodes = Array.from(uniqueNodesMap.values());
-    
+
     // Step 1: Filter by search term and status
     const filtered = uniqueNodes.filter(node => {
       // Handle search
@@ -29,21 +29,22 @@ export function useFilteredPNodes(
           node.ipAddress.toLowerCase().includes(q)
         );
       })();
-      
+
       // Handle status filter
       const matchesFilter = filterStatus === 'all' || node.status === filterStatus;
-      
+
       return matchesSearch && matchesFilter;
     });
-    
+
     // Step 2: Sort the filtered results
     const sorted = [...filtered].sort((a, b) => {
       if (sortBy === 'score') return (b.score || 0) - (a.score || 0);
       if (sortBy === 'uptime') return (b.uptime || 0) - (a.uptime || 0);
       if (sortBy === 'storage') return (b.storageCommitted || 0) - (a.storageCommitted || 0);
+      if (sortBy === 'new') return (a.uptime || 0) - (b.uptime || 0); // Newest first (lowest uptime)
       return 0;
     });
-    
+
     return sorted;
   }, [nodes, searchTerm, filterStatus, sortBy]);
 }

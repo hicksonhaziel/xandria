@@ -1,4 +1,5 @@
 'use client';
+
 import { Search, Download, Check } from 'lucide-react';
 
 interface Props {
@@ -95,6 +96,7 @@ export default function SearchAndFilters({
           <option value="score">Sort by Score</option>
           <option value="uptime">Sort by Uptime</option>
           <option value="storage">Sort by Storage</option>
+          <option value="new">Sort by NEW</option>
         </select>
 
         {/* Export Button */}
