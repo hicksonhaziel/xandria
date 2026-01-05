@@ -9,12 +9,12 @@ import { useAppContext } from '@/app/context/AppContext';
 const Header: React.FC = () => {
   const { darkMode, setDarkMode } = useAppContext();
   
-  // TODO: Add network state to AppContext
+  //network state to AppContext
   const [network, setNetwork] = React.useState<'devnet' | 'mainnet'>('mainnet');
   
   const cardClass = darkMode 
     ? 'bg-[#0B0F14]/50 bg-opacity-50 backdrop-blur-md' 
-    : 'bg-white bg-opacity-70 backdrop-blur-lg';
+    : 'bg-white/50 bg-opacity-50 backdrop-blur-lg';
   const mutedClass = darkMode ? 'text-gray-400' : 'text-gray-600';
   const borderClass = darkMode ? 'border-gray-800' : 'border-gray-200';
 

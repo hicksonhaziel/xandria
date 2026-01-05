@@ -87,7 +87,7 @@ export default function Sidebar() {
   return (
     <aside
       className={`
-        fixed left-0 top-10 h-[calc(100vh-5rem)]
+        fixed left-0 top-10 bottom-0
         ${cardClass} border-r ${borderClass}
         pt-20 
         z-40

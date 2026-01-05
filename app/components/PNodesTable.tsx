@@ -105,7 +105,7 @@ export default function PNodesTable({
                   </th>
                 )}
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Node</th>
-                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Score</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">XandScore™</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Uptime</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Last Seen</th>
@@ -349,7 +349,7 @@ export default function PNodesTable({
               {/* Score row */}
               <div className="flex items-center gap-4 mb-3">
                 <div>
-                  <p className={`text-xs ${mutedClass} mb-1`}>Score</p>
+                  <p className={`text-xs ${mutedClass} mb-1`}>XandScore™</p>
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-lg">
                       {score > 0 ? score.toFixed(1) : 'N/A'}
