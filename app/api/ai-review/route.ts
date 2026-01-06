@@ -47,7 +47,7 @@ Node Data:
 - Packets Received: ${nodeInfo.packetsReceived}
 - Packets Sent: ${nodeInfo.packetsSent}
 
-Provide a concise expert analysis focusing on: performance trends, potential issues, and a brief recommendation. Keep it under 50 words.`;
+Provide a concise expert analysis focusing on: performance trends, potential issues, and a brief recommendation. Keep it under 50 words, also if a node information is not provided completely(just know its a private node).`;
 
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
