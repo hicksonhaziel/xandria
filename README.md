@@ -6,7 +6,7 @@
 > **Built by:** Hickson Haziel 
 > **Live Demo:** [https://xandria-eight.vercel.app](https://xandria-eight.vercel.app)  
 > **Demo Video:** [https://youtu.be/1EVQZr022ew](https://youtu.be/1EVQZr022ew)
-> ** Read the full story:** [Building Xandria on Medium](https://medium.com/@hicksonhaziel/building-xandria-a-next-generation-analytics-platform-for-xandeum-pnodes-4b1d83924889)
+> **Read the full story:** [Building Xandria on Medium](https://medium.com/@hicksonhaziel/building-xandria-a-next-generation-analytics-platform-for-xandeum-pnodes-4b1d83924889)
 
 ---
 

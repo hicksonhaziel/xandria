@@ -2,8 +2,18 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {
-    const response = await fetch('https://podcredits.xandeum.network/api/pods-credits', {
-      method: 'GET',
+
+    // environment variable
+    const devnetEndpoint = process.env.NEXT_PUBLIC_XANDEUM_DEVNET_CREDIT_ENDPOINT;
+
+    if (!devnetEndpoint) {
+      return NextResponse.json(
+        { error: 'NEXT_PUBLIC_XANDEUM_DEVNET_CREDIT_ENDPOINT not configured' },
+        { status: 500 }
+      );
+    }
+    const response = await fetch(devnetEndpoint, {
+      method: 'GET', 
       headers: {
         'Accept': 'application/json',
       },
