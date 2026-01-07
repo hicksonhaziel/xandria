@@ -35,7 +35,7 @@ const Header: React.FC = () => {
               className='rounded-lg'
               priority
             />
-            <div className='md:hidden sm:hidden'>
+            <div className='hidden lg:block'>
               <h1 className="text-2xl font-bold">
                 Xandria
               </h1>
