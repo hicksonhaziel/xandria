@@ -281,7 +281,7 @@ const XandViz = () => {
           ml-[4.5rem] lg:ml-64
         `}
       >
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 md:px-0.5 sm:px-0.5 py-8">
           {showFavorites ? (
             <Favorites 
               darkMode={darkMode} 
@@ -292,10 +292,10 @@ const XandViz = () => {
             <>
               {/* Hero Section */}
               <div className="mb-12">
-                <h1 className="text-3xl md:text-4xl font-bold mb-2">
+                <h1 className="text-2xl md:text-2xl font-bold mb-2">
                   {getHeroText()}
                 </h1>
-                <p className={`text-md ${mutedClass} max-w-2xl`}>
+                <p className={`text-md md:text-sm sm:text-sm ${mutedClass} max-w-2xl`}>
                   Discover and analyze your Xandeum pNodes with powerful search and filtering tools
                 </p>
               </div>

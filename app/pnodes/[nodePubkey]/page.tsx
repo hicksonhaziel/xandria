@@ -54,7 +54,7 @@ export default function PNodeDetailPage() {
           ml-[4.5rem] lg:ml-64
         `}
       >
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 md:px-0.5 sm:px-0.5 py-8">
         
         {/* Loading state */}
         {loading && (
