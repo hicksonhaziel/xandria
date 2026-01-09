@@ -28,6 +28,8 @@ interface AppContextType {
   setVisualStatus: Dispatch<SetStateAction<VisualStatus>>;
   pnodesState: PNodesState;
   setPnodesState: Dispatch<SetStateAction<PNodesState>>;
+  network: 'devnet' | 'mainnet';  
+  setNetwork: Dispatch<SetStateAction<'devnet' | 'mainnet'>>;  
 }
 
 const defaultPNodesState: PNodesState = {
@@ -57,6 +59,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return 'pNodes_Explore';
   });
 
+  const [network, setNetwork] = useState<'devnet' | 'mainnet'>(() => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('network');
+    return saved !== null ? JSON.parse(saved) : 'devnet';
+  }
+  return 'devnet';
+});
+
   const [pnodesState, setPnodesState] =
     useState<PNodesState>(defaultPNodesState);
 
@@ -67,6 +77,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem('visualStatus', JSON.stringify(visualStatus));
   }, [visualStatus]);
+
+  useEffect(() => {
+  localStorage.setItem('network', JSON.stringify(network));
+}, [network]);
 
   useEffect(() => {
     const handleKeydown = (e: KeyboardEvent) => {
@@ -103,6 +117,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setVisualStatus,
         pnodesState,
         setPnodesState,
+        network,      
+        setNetwork, 
       }}
     >
       {children}

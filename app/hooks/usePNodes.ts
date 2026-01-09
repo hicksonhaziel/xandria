@@ -1,5 +1,5 @@
-// hooks/usePNodes.ts
 import { useEffect, useState, useCallback } from 'react';
+import { useAppContext } from '@/app/context/AppContext'; 
 import type { PNode, ApiResponse } from '@/app/types';
 
 interface UsePNodesOptions {
@@ -9,6 +9,7 @@ interface UsePNodesOptions {
 
 export function usePNodes(options: UsePNodesOptions = {}) {
   const { refreshInterval = 30000, autoRefresh = true } = options;
+  const { network } = useAppContext(); 
   
   const [pNodes, setPNodes] = useState<PNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,13 +23,12 @@ export function usePNodes(options: UsePNodesOptions = {}) {
     } else {
       setRefreshing(true);
     }
-    
     setError(null);
 
     try {
-      const res = await fetch('/api/pnodes');
+      const res = await fetch(`/api/pnodes?network=${network}`);
       if (!res.ok) throw new Error(res.statusText);
-
+      
       const result: ApiResponse = await res.json();
       if (!result.success) {
         throw new Error(result.message || result.error || 'Failed to fetch pNodes');
@@ -42,7 +42,7 @@ export function usePNodes(options: UsePNodesOptions = {}) {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [network]);
 
   useEffect(() => {
     fetchPNodes(false);

@@ -23,7 +23,7 @@ const NetworkTopology3D = dynamic(
   () => import('@/app/components/NetworkTopology3D'),
   { 
     ssr: false,
-    loading: () => (
+    loading: () => ( 
       <div className="w-full h-[600px] bg-gray-900 rounded-xl flex items-center justify-center">
         <div className="text-gray-400">Loading 3D visualization...</div>
       </div>

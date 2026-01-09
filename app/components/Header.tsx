@@ -7,10 +7,7 @@ import { Sun, Moon, ExternalLink } from 'lucide-react';
 import { useAppContext } from '@/app/context/AppContext';
 
 const Header: React.FC = () => {
-  const { darkMode, setDarkMode } = useAppContext();
-  
-  // Network is always devnet, mainnet is disabled
-  const network = 'devnet';
+  const { darkMode, setDarkMode, network, setNetwork } = useAppContext();
 
   const cardClass = darkMode 
     ? 'bg-[#0B0F14]/50 bg-opacity-50 backdrop-blur-md' 
@@ -47,38 +44,30 @@ const Header: React.FC = () => {
           <div className="flex items-center space-x-3">
             {/* Network Toggle */}
             <div className={`flex items-center rounded-lg border ${borderClass} ${cardClass} p-1`}>
-              {/* Devnet - Active */}
-              <button
-                className="px-3 py-1.5 rounded-md text-xs font-medium bg-orange-500/20 text-orange-400 shadow-sm cursor-default"
-              >
-                Devnet
-              </button>
+              {/* Devnet */}
+            <button
+              onClick={() => setNetwork('devnet')}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                network === 'devnet'
+                ? 'bg-orange-500/20 text-orange-400 shadow-sm'
+                : `${mutedClass} hover:bg-gray-500/10`
+              }`}
+            >
+             Devnet
+            </button>
 
-              {/* Mainnet - Disabled with tooltip */}
-              <div className="relative group">
-                <button
-                  disabled
-                  className={`px-3 py-1.5 rounded-md text-xs font-medium ${mutedClass} opacity-50 cursor-not-allowed flex items-center gap-1.5`}
-                >
-                  Mainnet
-                  <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 text-[9px] font-bold rounded uppercase">
-                    Soon
-                  </span>
-                </button>
-
-                {/* Tooltip on hover */}
-                <div className={`absolute top-full mt-2 left-1/2 -translate-x-1/2 px-3 py-2 rounded-lg ${
-                  darkMode ? 'bg-gray-800' : 'bg-gray-900'
-                } text-white text-xs whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-50`}>
-                  <div className="font-semibold mb-0.5">Coming Soon</div>
-                  <div className="text-gray-400 text-[10px]">Mainnet is currently in development for Xandria</div>
-                  {/* Arrow */}
-                  <div className={`absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 ${
-                    darkMode ? 'bg-gray-800' : 'bg-gray-900'
-                  }`}></div>
-                </div>
-              </div>
-            </div>
+           {/* Mainnet */}
+           <button
+            onClick={() => setNetwork('mainnet')}
+            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+              network === 'mainnet'
+              ? 'bg-green-500/20 text-green-400 shadow-sm'
+              : `${mutedClass} hover:bg-gray-500/10`
+            }`}
+           >
+             Mainnet
+            </button>
+          </div>
 
             {/* Dark Mode Toggle */}
             <button
