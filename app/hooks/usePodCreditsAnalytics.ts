@@ -10,6 +10,7 @@ interface PodCreditsResponse {
   success: boolean
   data: {
     podId: string
+    network: 'devnet' | 'mainnet'
     history: PodCredits[]
     stats: {
       dataPoints: number
@@ -51,6 +52,7 @@ interface UsePodCreditsAnalyticsOptions {
   refreshInterval?: number
   autoRefresh?: boolean
   defaultPeriod?: TimePeriod
+  network?: 'devnet' | 'mainnet'
 }
 
 export function usePodCreditsAnalytics(
@@ -58,9 +60,10 @@ export function usePodCreditsAnalytics(
   options: UsePodCreditsAnalyticsOptions = {}
 ) {
   const {
-    refreshInterval = 30000, // 30 seconds
+    refreshInterval = 30000,
     autoRefresh = true,
-    defaultPeriod = '24h'
+    defaultPeriod = '24h',
+    network = 'devnet'
   } = options
 
   const [data, setData] = useState<PodCreditsResponse['data'] | null>(null)
@@ -86,7 +89,7 @@ export function usePodCreditsAnalytics(
         setError(null)
 
         const response = await fetch(
-          `/api/analytics/pod/${podId}?period=${period}`,
+          `/api/analytics/pod/${podId}?period=${period}&network=${network}`,
           {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
@@ -116,7 +119,7 @@ export function usePodCreditsAnalytics(
         setRefreshing(false)
       }
     },
-    [podId, period]
+    [podId, period, network]
   )
 
   const refresh = useCallback(() => {
@@ -127,7 +130,6 @@ export function usePodCreditsAnalytics(
     setPeriod(newPeriod)
   }, [])
 
-  // Initial fetch
   useEffect(() => {
     isMountedRef.current = true
     fetchData(false)
@@ -140,7 +142,6 @@ export function usePodCreditsAnalytics(
     }
   }, [fetchData])
 
-  // Auto-refresh
   useEffect(() => {
     if (!autoRefresh || !podId) return
 
@@ -150,7 +151,7 @@ export function usePodCreditsAnalytics(
       }
 
       timeoutRef.current = setTimeout(() => {
-        fetchData(true) // Silent refresh
+        fetchData(true)
         scheduleNextFetch()
       }, refreshInterval)
     }
@@ -172,6 +173,7 @@ export function usePodCreditsAnalytics(
     lastFetch,
     refresh,
     period,
-    changePeriod
+    changePeriod,
+    network
   }
 }

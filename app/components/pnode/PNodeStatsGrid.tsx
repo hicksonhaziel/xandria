@@ -8,8 +8,9 @@ import { useNodeAnalytics } from '@/app/hooks/useNodeAnalytics';
 interface Props {
   node: PNodeDetailResponse['data'];
   darkMode: boolean;
+  network: 'devnet' | 'mainnet';
 }
-
+ 
 // Format storage
 const formatStorage = (bytes: number): string => {
   const tb = bytes / 1_000_000_000_000;
@@ -34,7 +35,7 @@ const formatUptimeChange = (seconds: number): string => {
   return `${mins}m`;
 };
 
-export default function PNodeStatsGrid({ node, darkMode }: Props) {
+export default function PNodeStatsGrid({ node, darkMode, network}: Props) {
   const cardClass = darkMode ? 'bg-[#111827]' : 'bg-white';
   const borderClass = darkMode ? 'border-gray-700' : 'border-gray-200';
   const mutedClass = darkMode ? 'text-gray-400' : 'text-gray-600';
@@ -46,7 +47,8 @@ export default function PNodeStatsGrid({ node, darkMode }: Props) {
   const { data: analyticsData } = useNodeAnalytics(node.pubkey, {
     refreshInterval: 30000,
     autoRefresh: true,
-    defaultPeriod: '1h'
+    defaultPeriod: '1h',
+    network,
   });
 
   // Calculate changes

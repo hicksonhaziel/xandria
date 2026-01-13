@@ -10,7 +10,7 @@ import {
   CartesianGrid,
   Tooltip,
   ReferenceLine,
-  LineChart,
+  LineChart, 
   Line,
 } from 'recharts';
 import type { PNodeDetailResponse } from '@/app/types/pnode-detail';
@@ -20,11 +20,12 @@ import { Loader2 } from 'lucide-react';
 interface Props {
   node: PNodeDetailResponse['data'];
   darkMode: boolean;
+  network: 'devnet' | 'mainnet';
 }
 
 type TimePeriod = '10min' | '1h' | '24h' | '7d';
 
-export default function PNodeCharts({ node, darkMode }: Props) {
+export default function PNodeCharts({ node, darkMode, network }: Props) {
   const cardClass = darkMode ? 'bg-[#0B1220]' : 'bg-white';
   const borderClass = darkMode ? 'border-gray-700' : 'border-gray-200';
   const gridStroke = darkMode ? '#374151' : '#e5e7eb';
@@ -37,13 +38,15 @@ export default function PNodeCharts({ node, darkMode }: Props) {
   const uptimeAnalytics = useNodeAnalytics(node.pubkey, {
     refreshInterval: 30000,
     autoRefresh: true,
-    defaultPeriod: uptimePeriod
+    defaultPeriod: uptimePeriod,
+    network,
   });
 
   const xanScoreAnalytics = useNodeAnalytics(node.pubkey, {
     refreshInterval: 30000,
     autoRefresh: true,
-    defaultPeriod: xanScorePeriod
+    defaultPeriod: xanScorePeriod,
+    network
   });
 
   
@@ -74,28 +77,42 @@ export default function PNodeCharts({ node, darkMode }: Props) {
   ];
 
 
-  const uptimeHistoricalData = uptimeAnalytics.data?.history.map(point => ({
-    timestamp: new Date(point.timestamp).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    }),
-    uptime: Math.floor(point.uptime / 3600), 
-    fullTimestamp: point.timestamp
-  })) || [];
+  const uptimeHistoricalData = uptimeAnalytics.data?.history.map(point => {
+    // Ensure we convert String/BigInt to a standard Number
+    const ts = Number(point.timestamp);
+    const dateObj = new Date(ts);
 
+    return {
+      timestamp: isNaN(dateObj.getTime()) 
+        ? 'Invalid' 
+        : dateObj.toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }),
+      uptime: Math.floor(point.uptime / 3600), 
+      fullTimestamp: ts
+    };
+  }) || [];
   
 
   const xanScoreHistoricalData = xanScoreAnalytics.data?.history
     .filter(point => point.xanScore !== undefined)
-    .map(point => ({
-      timestamp: new Date(point.timestamp).toLocaleTimeString([], { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
-      xanScore: point.xanScore,
-      fullTimestamp: point.timestamp
-    })) || [];
+    .map(point => {
+      // Ensure we convert String/BigInt to a standard Number
+      const ts = Number(point.timestamp);
+      const dateObj = new Date(ts);
 
+      return {
+        timestamp: isNaN(dateObj.getTime()) 
+          ? 'Invalid' 
+          : dateObj.toLocaleTimeString([], { 
+              hour: '2-digit', 
+              minute: '2-digit' 
+            }),
+        xanScore: point.xanScore,
+        fullTimestamp: ts
+      };
+    }) || [];
   
   const TimePeriodSelector = ({ 
     current, 

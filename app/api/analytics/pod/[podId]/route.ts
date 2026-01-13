@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { RedisAnalyticsService } from '@/app/lib/redis-analytics'
+import { DBAnalyticsService } from '@/app/lib/db-analytics'
 
 export async function GET(
   request: Request,
@@ -9,6 +9,7 @@ export async function GET(
     const { podId } = await context.params
     const { searchParams } = new URL(request.url)
     
+    const network = (searchParams.get('network') || 'devnet') as 'devnet' | 'mainnet'
     const startTime = searchParams.get('startTime')
       ? parseInt(searchParams.get('startTime')!)
       : undefined
@@ -43,7 +44,8 @@ export async function GET(
       }
     }
 
-    const history = await RedisAnalyticsService.getPodCreditsHistory(
+    const history = await DBAnalyticsService.getPodCreditsHistory(
+      network,
       podId,
       start,
       end
@@ -54,6 +56,7 @@ export async function GET(
         success: true,
         data: {
           podId,
+          network,
           history: [],
           stats: {
             dataPoints: 0,
@@ -65,31 +68,32 @@ export async function GET(
     }
 
     const [change10min, change7days] = await Promise.all([
-      RedisAnalyticsService.getPodCreditsChange(podId, '10min'),
-      RedisAnalyticsService.getPodCreditsChange(podId, '7days')
+      DBAnalyticsService.getPodCreditsChange(network, podId, 10),
+      DBAnalyticsService.getPodCreditsChange(network, podId, 7 * 24 * 60)
     ])
 
     const credits = history.map(h => h.credits)
-    const currentCredits = credits[credits.length - 1]
-    const previousCredits = credits[0]
+    const currentCredits = credits[0] // Most recent (DESC order)
+    const previousCredits = credits[credits.length - 1]
     const totalChange = currentCredits - previousCredits
     const percentChange = previousCredits > 0 
       ? ((totalChange / previousCredits) * 100) 
       : 0
 
-    const timeRangeHours = (history[history.length - 1].timestamp - history[0].timestamp) / (1000 * 60 * 60)
+    const timeRangeHours = (history[0].timestamp - history[history.length - 1].timestamp) / (1000 * 60 * 60)
     const earningRate = timeRangeHours > 0 ? totalChange / timeRangeHours : 0
 
     return NextResponse.json({
       success: true,
       data: {
         podId,
+        network,
         history,
         stats: {
           dataPoints: history.length,
           timeRange: {
-            start: history[0].timestamp,
-            end: history[history.length - 1].timestamp
+            start: history[history.length - 1].timestamp,
+            end: history[0].timestamp
           },
           credits: {
             current: currentCredits,

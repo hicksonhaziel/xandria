@@ -18,6 +18,7 @@ interface NodeHistoryResponse {
   success: boolean
   data: {
     pubkey: string
+    network: 'devnet' | 'mainnet'
     history: NodeMetrics[]
     stats: {
       dataPoints: number
@@ -69,6 +70,7 @@ interface UseNodeAnalyticsOptions {
   refreshInterval?: number
   autoRefresh?: boolean
   defaultPeriod?: TimePeriod
+  network?: 'devnet' | 'mainnet'
 }
 
 export function useNodeAnalytics(
@@ -76,9 +78,10 @@ export function useNodeAnalytics(
   options: UseNodeAnalyticsOptions = {}
 ) {
   const {
-    refreshInterval = 30000, // 30 seconds
+    refreshInterval = 30000,
     autoRefresh = true,
-    defaultPeriod = '24h'
+    defaultPeriod = '24h',
+    network = 'devnet'
   } = options
 
   const [data, setData] = useState<NodeHistoryResponse['data'] | null>(null)
@@ -104,7 +107,7 @@ export function useNodeAnalytics(
         setError(null)
 
         const response = await fetch(
-          `/api/analytics/node/${pubkey}?period=${period}`,
+          `/api/analytics/node/${pubkey}?period=${period}&network=${network}`,
           {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' }
@@ -134,7 +137,7 @@ export function useNodeAnalytics(
         setRefreshing(false)
       }
     },
-    [pubkey, period]
+    [pubkey, period, network]
   )
 
   const refresh = useCallback(() => {
@@ -145,7 +148,6 @@ export function useNodeAnalytics(
     setPeriod(newPeriod)
   }, [])
 
-  // Initial fetch
   useEffect(() => {
     isMountedRef.current = true
     fetchData(false)
@@ -158,7 +160,6 @@ export function useNodeAnalytics(
     }
   }, [fetchData])
 
-  // Auto-refresh
   useEffect(() => {
     if (!autoRefresh || !pubkey) return
 
@@ -168,7 +169,7 @@ export function useNodeAnalytics(
       }
 
       timeoutRef.current = setTimeout(() => {
-        fetchData(true) // Silent refresh
+        fetchData(true)
         scheduleNextFetch()
       }, refreshInterval)
     }
@@ -190,6 +191,7 @@ export function useNodeAnalytics(
     lastFetch,
     refresh,
     period,
-    changePeriod
+    changePeriod,
+    network
   }
 }

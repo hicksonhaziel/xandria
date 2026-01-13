@@ -1,21 +1,22 @@
 import { NextResponse } from 'next/server'
-import { RedisAnalyticsService } from '@/app/lib/redis-analytics'
+import { DBAnalyticsService } from '@/app/lib/db-analytics'
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
+    const network = (searchParams.get('network') || 'devnet') as 'devnet' | 'mainnet'
     const limit = parseInt(searchParams.get('limit') || '10')
 
-    // Get all tracked entities
+    // Get all tracked entities for this network
     const [nodesPubkeys, podIds] = await Promise.all([
-      RedisAnalyticsService.getAllTrackedNodes(),
-      RedisAnalyticsService.getAllTrackedPods()
+      DBAnalyticsService.getAllTrackedNodes(network),
+      DBAnalyticsService.getAllTrackedPods(network)
     ])
 
     // Get latest metrics for top nodes
     const nodesData = await Promise.all(
       nodesPubkeys.slice(0, limit).map(async (pubkey) => {
-        const latest = await RedisAnalyticsService.getLatestNodeMetrics(pubkey)
+        const latest = await DBAnalyticsService.getLatestNodeMetrics(network, pubkey)
         return { pubkey, latest }
       })
     )
@@ -23,9 +24,9 @@ export async function GET(request: Request) {
     // Get latest credits for top pods
     const podsData = await Promise.all(
       podIds.slice(0, limit).map(async (podId) => {
-        const latest = await RedisAnalyticsService.getLatestPodCredits(podId)
-        const change10min = await RedisAnalyticsService.getPodCreditsChange(podId, '10min')
-        const change7days = await RedisAnalyticsService.getPodCreditsChange(podId, '7days')
+        const latest = await DBAnalyticsService.getLatestPodCredits(network, podId)
+        const change10min = await DBAnalyticsService.getPodCreditsChange(network, podId, 10)
+        const change7days = await DBAnalyticsService.getPodCreditsChange(network, podId, 7 * 24 * 60)
         return { podId, latest, change10min, change7days }
       })
     )
@@ -33,6 +34,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       data: {
+        network,
         nodes: {
           total: nodesPubkeys.length,
           tracked: nodesData.filter(n => n.latest !== null).length,

@@ -1,19 +1,24 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const searchParams = request.nextUrl.searchParams;
+    const network = searchParams.get('network') || 'devnet';
 
-    // environment variable
-    const devnetEndpoint = process.env.NEXT_PUBLIC_XANDEUM_DEVNET_CREDIT_ENDPOINT;
+    // Get the appropriate endpoint
+    const endpoint = network === 'mainnet'
+      ? process.env.NEXT_PUBLIC_XANDEUM_MAINET_CREDIT_ENDPOINT
+      : process.env.NEXT_PUBLIC_XANDEUM_DEVNET_CREDIT_ENDPOINT;
 
-    if (!devnetEndpoint) {
+    if (!endpoint) {
       return NextResponse.json(
-        { error: 'NEXT_PUBLIC_XANDEUM_DEVNET_CREDIT_ENDPOINT not configured' },
+        { error: `${network.toUpperCase()} credit endpoint not configured` },
         { status: 500 }
       );
     }
-    const response = await fetch(devnetEndpoint, {
-      method: 'GET', 
+
+    const response = await fetch(endpoint, {
+      method: 'GET',
       headers: {
         'Accept': 'application/json',
       },
@@ -29,11 +34,14 @@ export async function GET() {
 
     const data = await response.json();
     
-    return NextResponse.json(data, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
-      },
-    });
+    return NextResponse.json(
+      { ...data, network },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+        },
+      }
+    );
   } catch (error) {
     console.error('API proxy error:', error);
     return NextResponse.json(

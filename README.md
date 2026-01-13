@@ -104,6 +104,7 @@ Xandria is a next-generation analytics platform for Xandeum pNodes that goes bey
 - Node.js 18+ and npm
 - Git
 - A Vercel account (for deployment)
+- Database (postgresql)
 
 ### Installation
 
@@ -124,6 +125,10 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to see the application.
+
+### databse
+
+copy /database.sql and run it on your postgresql 
 
 
 ## 📖 Usage Guide

@@ -16,15 +16,17 @@ export interface CreditsResponse {
   totalNodes: number;
   lastUpdate: string;
   timestamp: number;
+  network: 'devnet' | 'mainnet';
 }
 
 interface UseCreditsOptions {
   refreshInterval?: number;
   autoRefresh?: boolean;
+  network?: 'devnet' | 'mainnet';
 }
 
 export function useCredits(options: UseCreditsOptions = {}) {
-  const { refreshInterval = 60000, autoRefresh = true } = options;
+  const { refreshInterval = 60000, autoRefresh = true, network = 'devnet' } = options;
   
   const [data, setData] = useState<CreditsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,9 +37,9 @@ export function useCredits(options: UseCreditsOptions = {}) {
     try {
       setError(null);
       
-      console.log('Fetching credits from API...');
+      console.log(`Fetching ${network} credits from API...`);
       
-      const response = await fetch('/api/pods-credits', {
+      const response = await fetch(`/api/pods-credits?network=${network}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -53,7 +55,6 @@ export function useCredits(options: UseCreditsOptions = {}) {
       const jsonData = await response.json();
       console.log('API Response:', jsonData);
       
-      // Check if pods_credits exists
       if (!jsonData.pods_credits) {
         throw new Error('Invalid API response: pods_credits not found');
       }
@@ -64,7 +65,6 @@ export function useCredits(options: UseCreditsOptions = {}) {
         throw new Error('Invalid API response: pods_credits is not an array');
       }
       
-      // Sort by credits descending to calculate ranks
       const sortedPods = [...podsCredits].sort((a, b) => b.credits - a.credits);
       
       const nodes: NodeCredits[] = sortedPods.map((pod, index) => ({
@@ -81,6 +81,7 @@ export function useCredits(options: UseCreditsOptions = {}) {
         totalNodes: nodes.length,
         lastUpdate: new Date().toISOString(),
         timestamp: Date.now(),
+        network: jsonData.network || network,
       };
 
       console.log('Transformed data:', transformedData);
@@ -104,7 +105,7 @@ export function useCredits(options: UseCreditsOptions = {}) {
       const interval = setInterval(fetchCredits, refreshInterval);
       return () => clearInterval(interval);
     }
-  }, [autoRefresh, refreshInterval]);
+  }, [autoRefresh, refreshInterval, network]);
 
   return {
     data,
@@ -112,12 +113,15 @@ export function useCredits(options: UseCreditsOptions = {}) {
     error,
     lastFetch,
     refresh: fetchCredits,
+    network,
   };
 }
 
-// Hook to get credits for a specific node
-export function useNodeCredits(nodePubkey: string, options: UseCreditsOptions = {}) {
-  const { data, loading, error, lastFetch, refresh } = useCredits(options);
+export function useNodeCredits(
+  nodePubkey: string, 
+  options: UseCreditsOptions = {}
+) {
+  const { data, loading, error, lastFetch, refresh, network } = useCredits(options);
   
   const nodeCredits = data?.nodes.find(
     (node) => node.pubkey === nodePubkey || node.id === nodePubkey
@@ -130,5 +134,6 @@ export function useNodeCredits(nodePubkey: string, options: UseCreditsOptions = 
     lastFetch,
     refresh,
     totalNodes: data?.totalNodes,
+    network,
   };
 }

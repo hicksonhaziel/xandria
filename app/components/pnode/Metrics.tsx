@@ -12,7 +12,7 @@ import {
   Cpu,
   MemoryStick,
   Activity,
-  HardDrive,
+  HardDrive, 
 } from 'lucide-react';
 
 import { useNodeCredits } from '@/app/hooks/useCredits';
@@ -23,6 +23,7 @@ interface Props {
   nodePubkey: string;
   details: PNodeDetailResponse['data']['details'];
   darkMode: boolean;
+  network: 'devnet' | 'mainnet';
 }
 
 const formatBytes = (bytes: number): string => {
@@ -38,8 +39,16 @@ const formatTime = (date: Date | null) =>
   date ? date.toLocaleTimeString() : 'N/A';
 
 
-const getMonthFromTimestamp = (timestamp: number): string => {
-  const date = new Date(timestamp);
+const getMonthFromTimestamp = (timestamp: any): string => {
+  // Convert to Number to handle strings/BigInts
+  const ts = Number(timestamp);
+  const date = new Date(ts);
+  
+  // Safety check: if the date is invalid, return the current month
+  if (isNaN(date.getTime())) {
+    return new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+  }
+  
   return date.toLocaleString('default', { month: 'long', year: 'numeric' });
 };
 
@@ -48,6 +57,7 @@ export default function Metrics({
   nodePubkey,
   details,
   darkMode,
+  network,
 }: Props) {
   const {
     credits,
@@ -59,6 +69,7 @@ export default function Metrics({
   } = useNodeCredits(nodePubkey, {
     refreshInterval: 30000,
     autoRefresh: true,
+    network,
   });
 
   
@@ -69,7 +80,8 @@ export default function Metrics({
   } = usePodCreditsAnalytics(podId, {
     refreshInterval: 30000,
     autoRefresh: true,
-    defaultPeriod: '1h'
+    defaultPeriod: '1h',
+    network
   });
 
   const cardClass = darkMode ? 'bg-[#0B1220]' : 'bg-white';
@@ -83,13 +95,16 @@ export default function Metrics({
   const creditsChange = analyticsData?.stats?.changes?.last10min?.change || 0;
   const creditsChangePercent = analyticsData?.stats?.changes?.last10min?.percentChange || 0;
 
-  // Calculate monthly earned from first data point
-  const firstDataPoint = analyticsData?.history?.[0];
+  // Find the earliest credit value we have in the current history
+  const firstDataPoint = analyticsData?.history?.[analyticsData.history.length - 1]; // Use the LAST point in history as the start
   const currentCredits = analyticsData?.stats?.credits?.current || credits?.credits || credits?.balance || 0;
-  const monthlyEarned = firstDataPoint 
+  
+  // If we have history, show growth. If not, fallback to the total earned from the node itself.
+  const monthlyEarned = firstDataPoint && (currentCredits - firstDataPoint.credits > 0)
     ? currentCredits - firstDataPoint.credits
-    : credits?.monthlyEarned || credits?.earnedThisMonth || 0;
+    : (credits?.monthlyEarned || credits?.earnedThisMonth || 0);
 
+    
   // Get month name
   const currentMonth = firstDataPoint 
     ? getMonthFromTimestamp(firstDataPoint.timestamp)

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { RedisAnalyticsService } from '@/app/lib/redis-analytics'
+import { DBAnalyticsService } from '@/app/lib/db-analytics'
 
 export async function GET(
   request: Request,
@@ -9,7 +9,7 @@ export async function GET(
     const { pubkey } = await context.params
     const { searchParams } = new URL(request.url)
     
-    // time range parameters
+    const network = (searchParams.get('network') || 'devnet') as 'devnet' | 'mainnet'
     const startTime = searchParams.get('startTime')
       ? parseInt(searchParams.get('startTime')!)
       : undefined
@@ -18,7 +18,6 @@ export async function GET(
       : undefined
     const period = searchParams.get('period') as '1h' | '24h' | '7d' | 'all' | null
 
-    // time range based on period
     let start = startTime
     let end = endTime || Date.now()
 
@@ -42,7 +41,8 @@ export async function GET(
       }
     }
 
-    const history = await RedisAnalyticsService.getNodeHistory(
+    const history = await DBAnalyticsService.getNodeHistory(
+      network,
       pubkey,
       start,
       end
@@ -53,6 +53,7 @@ export async function GET(
         success: true,
         data: {
           pubkey,
+          network,
           history: [],
           stats: {
             dataPoints: 0,
@@ -72,13 +73,18 @@ export async function GET(
 
     const calculateStats = (values: number[]) => {
       if (values.length === 0) return null
+      
+      // Since history is DESC (newest first):
+      const current = values[0]                   
+      const previous = values[values.length - 1]  
+      
       return {
         min: Math.min(...values),
         max: Math.max(...values),
         avg: values.reduce((a, b) => a + b, 0) / values.length,
-        current: values[values.length - 1],
-        previous: values[0],
-        change: values[values.length - 1] - values[0]
+        current,
+        previous,
+        change: current - previous 
       }
     }
 
@@ -95,6 +101,7 @@ export async function GET(
       success: true,
       data: {
         pubkey,
+        network,
         history,
         stats: {
           dataPoints: history.length,
