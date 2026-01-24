@@ -129,7 +129,7 @@ export default function LeaderboardPage() {
       <Header />
       <Sidebar />
 
-      <div className={`pt-20 px-6 transition-all duration-200 ml-[4.5rem] lg:ml-64`}>
+      <div className={`pt-20 pb-24 lg:pb-8 px-4 sm:px-6 lg:ml-64 min-h-screen`}>
         <div className="container mx-auto px-4 py-8 max-w-6xl">
           
           {/* Header */}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { PNode } from '@/app/types';
 import { exportPNodesCSV } from '@/app/lib/utils/exportPNodes';
 import { Suspense } from 'react';
@@ -16,8 +16,7 @@ import NetworkOverviewStats from './components/NetworkOverviewStats';
 import SearchAndFilters from './components/SearchAndFilters';
 import PNodesTable from './components/PNodesTable';
 import { Favorites } from './components/Favorites';
-import { useSidebarCollapse } from '@/app/hooks/useSidebarCollapse';
-import { AlertCircle, Check, Star, WifiOff } from 'lucide-react';
+import { Star, WifiOff } from 'lucide-react';
 
 const NetworkTopology3D = dynamic(
   () => import('@/app/components/NetworkTopology3D'),
@@ -31,20 +30,10 @@ const NetworkTopology3D = dynamic(
   }
 );
 
-const vtoggleOptions = [
-  { key: 'pNodes_Explore' as const, label: 'pNodes Explore' },
-  { key: 'Network_3D' as const, label: 'Network 3D' },
-  { key: 'pNodes_Analysis' as const, label: 'pNodes Analysis' }
-];
-
-const XandViz = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const sidebarCollapsed = useSidebarCollapse();
-  
+const Xandria = () => {
   const {
     darkMode,
     visualStatus,
-    setVisualStatus,
     pnodesState,
     setPnodesState,
   } = useAppContext();
@@ -204,27 +193,6 @@ const XandViz = () => {
     };
   }, [pNodes]);
 
-  const versionDistribution = useMemo(() => {
-    const dist: Record<string, number> = {};
-    pNodes.forEach(node => {
-      dist[node.version] = (dist[node.version] || 0) + 1;
-    });
-    return Object.entries(dist).map(([version, count]) => ({ version, count }));
-  }, [pNodes]);
-
-  const statusDistribution = useMemo(() => {
-    const dist: Record<string, number> = {};
-    pNodes.forEach(node => {
-      dist[node.status] = (dist[node.status] || 0) + 1;
-    });
-    return Object.entries(dist).map(([status, count]) => ({ 
-      status: status.charAt(0).toUpperCase() + status.slice(1), 
-      count 
-    }));
-  }, [pNodes]);
-
-  const COLORS = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4'];
-
   const bgClass = darkMode ? 'bg-[#0B0F14]' : 'bg-gray-50';
   const cardClass = darkMode ? 'bg-[#111827] bg-opacity-50 backdrop-blur-lg' : 'bg-white bg-opacity-70 backdrop-blur-lg';
   const textClass = darkMode ? 'text-gray-100' : 'text-gray-900';
@@ -269,19 +237,20 @@ const XandViz = () => {
     );
   }
 
-
   return (
-    <div ref={containerRef} className={`min-h-screen ${bgClass} ${textClass} transition-colors duration-300`}>
+    <div className={`min-h-screen ${bgClass} ${textClass} transition-colors duration-300 overflow-x-hidden`}>
       <Header />
       <Sidebar />
 
       <div 
         className={`
-          pt-20 px-6 transition-all duration-300
-          ml-[4.5rem] lg:ml-64
+          pt-20 pb-24 lg:pb-8 px-4 sm:px-6 
+          transition-all duration-300
+          lg:ml-64
+          min-h-screen
         `}
       >
-        <div className="container mx-auto px-4 md:px-0.5 sm:px-0.5 py-8">
+        <div className="container mx-auto max-w-7xl py-8">
           {showFavorites ? (
             <Favorites 
               darkMode={darkMode} 
@@ -291,11 +260,11 @@ const XandViz = () => {
           ) : (
             <>
               {/* Hero Section */}
-              <div className="mb-12">
-                <h1 className="text-2xl md:text-2xl font-bold mb-2">
+              <div className="mb-8">
+                <h1 className="text-2xl md:text-3xl font-bold mb-2">
                   {getHeroText()}
                 </h1>
-                <p className={`text-md md:text-sm sm:text-sm ${mutedClass} max-w-2xl`}>
+                <p className={`text-sm md:text-base ${mutedClass} max-w-2xl`}>
                   Discover and analyze your Xandeum pNodes with powerful search and filtering tools
                 </p>
               </div>
@@ -373,16 +342,25 @@ const XandViz = () => {
               )}
 
               {visualStatus === 'pNodes_Explore' && (
-                <PNodesTable
-                  nodes={filteredNodes}
-                  darkMode={darkMode}
-                  cardClass={cardClass}
-                  borderClass={borderClass}
-                  mutedClass={mutedClass}
-                  onSelectNode={setSelectedNode}
-                  onToggleFavorite={toggleFavorite}
-                  isFavorited={isFavorited}
-                />
+                loading ? (
+                  <div className="flex items-center justify-center py-20">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-12 h-12 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin" />
+                      <p className={mutedClass}>Loading pnodes...</p>
+                    </div>
+                  </div>
+                ) : (
+                  <PNodesTable
+                    nodes={filteredNodes}
+                    darkMode={darkMode}
+                    cardClass={cardClass}
+                    borderClass={borderClass}
+                    mutedClass={mutedClass}
+                    onSelectNode={setSelectedNode}
+                    onToggleFavorite={toggleFavorite}
+                    isFavorited={isFavorited}
+                  />
+                )
               )}
             </>
           )}
@@ -394,4 +372,4 @@ const XandViz = () => {
   );
 };
 
-export default XandViz;
+export default Xandria;

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 :root {
   --background: #ffffff;
@@ -74,4 +75,33 @@ body {
 .liquidGlass-text {
     z-index: 3;
     color: #000;
+}
+
+/* Styling for the Markdown container */
+.prose h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  color: inherit;
+}
+
+.prose p {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.prose ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.prose strong {
+  font-weight: 700;
+  color: #3b82f6; /* Optional: make bold text blue like your brand */
+}
+
+.prose-invert {
+  color: #f3f4f6;
 }

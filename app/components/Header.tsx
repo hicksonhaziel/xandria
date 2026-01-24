@@ -32,11 +32,11 @@ const Header: React.FC = () => {
               className='rounded-lg'
               priority
             />
-            <div className='hidden lg:block md:block'>
+            <div className=''>
               <h1 className="text-2xl font-bold">
                 Xandria
               </h1>
-              <p className={`text-xs ${mutedClass}`}>Xandeum pNode Analytics</p>
+              <p className={`text-xs hidden lg:block md:block ${mutedClass}`}>Xandeum pNode Analytics</p>
             </div>
           </div>
 
@@ -76,27 +76,6 @@ const Header: React.FC = () => {
             >
               {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
-
-            {/* Docs Link */}
-            <a
-              href="https://docs.xandeum.network"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden sm:flex items-center space-x-2 px-4 py-2 bg-purple-500/15 hover:bg-purple-700/15 rounded-lg transition-colors"
-            >
-              <span className="text-sm font-medium">Docs</span>
-              <ExternalLink className="w-4 h-4" />
-            </a>
-
-            {/* Mobile Docs Icon */}
-            <a
-              href="https://docs.xandeum.network"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="sm:hidden p-2 rounded-lg bg-purple-500/15 hover:bg-purple-700/15 transition-colors"
-            >
-              <ExternalLink className="w-5 h-5" />
-            </a>
           </div>
         </div>
       </div>

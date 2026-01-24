@@ -296,7 +296,7 @@ export default function PNodesTable({
         )}
       </div>
 
-      {/* Mobile: Card view */}
+      {/* Mobile: Card view */} 
       <div className="md:hidden space-y-3">
         {visibleNodes.map((node) => {
           const grade = node.scoreBreakdown?.grade || 'N/A';
