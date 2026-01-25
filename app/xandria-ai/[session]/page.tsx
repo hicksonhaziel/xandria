@@ -9,6 +9,8 @@ import Header from '@/app/components/Header';
 import Sidebar from '@/app/components/Sidebar';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import ErrorModal from '@/app/components/xandria-ai/ErrorModal';
+import { checkRateLimit, incrementRateLimit, getRemainingTime } from '@/app/components/xandria-ai/rateLimitUtils';
 
 interface Source {
   score: number;
@@ -51,9 +53,11 @@ const XandriaAISession = () => {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [showSessions, setShowSessions] = useState(false);
   const [expandedSources, setExpandedSources] = useState<{[key: number]: boolean}>({});
+  
+  // Error modal states
+  const [errorModal, setErrorModal] = useState({ isOpen: false, message: '' });
 
   const bgClass = darkMode ? 'bg-[#0B0F14]' : 'bg-gray-50';
   const cardClass = darkMode 
@@ -63,6 +67,14 @@ const XandriaAISession = () => {
   const mutedClass = darkMode ? 'text-gray-400' : 'text-gray-600';
   const borderClass = darkMode ? 'border-gray-700' : 'border-gray-200';
   const hoverClass = darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100';
+
+  const showError = (message: string) => {
+    setErrorModal({ isOpen: true, message });
+  };
+
+  const closeError = () => {
+    setErrorModal({ isOpen: false, message: '' });
+  };
 
   // Auto-resize textarea
   useEffect(() => {
@@ -106,7 +118,6 @@ const XandriaAISession = () => {
 
   const loadHistory = async (sid: string) => {
     setIsLoading(true);
-    setError(null);
 
     try {
       const response = await fetch(`/api/xandria-ai?action=history&session_id=${sid}`);
@@ -115,10 +126,10 @@ const XandriaAISession = () => {
       if (data.success) {
         setMessages(data.messages || []);
       } else {
-        setError(data.error || 'Failed to load history');
+        showError('Unable to load your conversation. Please try again.');
       }
     } catch (err) {
-      setError('Failed to load conversation history');
+      showError('Unable to load your conversation. Please try again.');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -128,10 +139,17 @@ const XandriaAISession = () => {
   const handleSend = async () => {
     if (!message.trim() || !connected || !publicKey || isSending) return;
     
+    // Check rate limit
+    const rateLimit = checkRateLimit();
+    if (!rateLimit.allowed) {
+      const timeRemaining = getRemainingTime(rateLimit.resetTime);
+      showError(`You've reached your daily message limit. Please try again in ${timeRemaining}.`);
+      return;
+    }
+
     const userMessage = message.trim();
     setMessage('');
     setIsSending(true);
-    setError(null);
 
     // Add user message optimistically
     const tempUserMsg: Message = {
@@ -158,6 +176,9 @@ const XandriaAISession = () => {
       const data = await response.json();
 
       if (data.success) {
+        // Increment rate limit counter only on successful send
+        incrementRateLimit();
+
         // Update user message with actual ID
         setMessages(prev => prev.map(msg => 
           msg.id === tempUserMsg.id 
@@ -180,11 +201,11 @@ const XandriaAISession = () => {
         // Refresh sessions
         loadSessions();
       } else {
-        setError(data.error || 'Failed to send message');
+        showError('Unable to send your message. Please try again.');
         setMessages(prev => prev.filter(msg => msg.id !== tempUserMsg.id));
       }
     } catch (err) {
-      setError('Failed to send message. Please try again.');
+      showError('Something went wrong. Please try again.');
       console.error(err);
       setMessages(prev => prev.filter(msg => msg.id !== tempUserMsg.id));
     } finally {
@@ -201,7 +222,6 @@ const XandriaAISession = () => {
       idx === messageIndex ? { ...msg, isRegenerating: true } : msg
     ));
     setIsSending(true);
-    setError(null);
 
     try {
       const response = await fetch('/api/xandria-ai', {
@@ -231,13 +251,13 @@ const XandriaAISession = () => {
             : msg
         ));
       } else {
-        setError(data.error || 'Failed to regenerate response');
+        showError('Unable to regenerate response. Please try again.');
         setMessages(prev => prev.map((msg, idx) => 
           idx === messageIndex ? { ...msg, isRegenerating: false } : msg
         ));
       }
     } catch (err) {
-      setError('Failed to regenerate response');
+      showError('Something went wrong. Please try again.');
       console.error(err);
       setMessages(prev => prev.map((msg, idx) => 
         idx === messageIndex ? { ...msg, isRegenerating: false } : msg
@@ -271,7 +291,7 @@ const XandriaAISession = () => {
         setMessages(prev => prev.map((msg, idx) => 
           idx === messageIndex ? { ...msg, rating: null } : msg
         ));
-        setError(data.error || 'Failed to rate message');
+        showError('Unable to save your rating. Please try again.');
       }
     } catch (err) {
       setMessages(prev => prev.map((msg, idx) => 
@@ -297,11 +317,11 @@ const XandriaAISession = () => {
   };
 
   const suggestedPrompts = [
-  { icon: Settings2, title: 'How do I set up a pnode?', desc: 'Get started with pnodes' },
-  { icon: Coins, title: 'Explain Xandria tokenomics', desc: 'Learn about the ecosystem' },
-  { icon: BarChart3, title: 'Check my node performance', desc: 'Monitor your nodes' },
-  { icon: Wrench, title: 'Troubleshoot node issues', desc: 'Fix common problems' }
-];
+    { icon: Settings2, title: 'How do I set up a pnode?', desc: 'Get started with pnodes' },
+    { icon: Coins, title: 'Explain Xandria tokenomics', desc: 'Learn about the ecosystem' },
+    { icon: BarChart3, title: 'Check my node performance', desc: 'Monitor your nodes' },
+    { icon: Wrench, title: 'Troubleshoot node issues', desc: 'Fix common problems' }
+  ];
 
   if (!connected) {
     return (
@@ -328,6 +348,12 @@ const XandriaAISession = () => {
     <div ref={containerRef} className={`min-h-screen ${bgClass} ${textClass} transition-colors duration-300`}>
       <Header />
       <Sidebar />
+      <ErrorModal 
+        isOpen={errorModal.isOpen} 
+        onClose={closeError} 
+        message={errorModal.message}
+        darkMode={darkMode}
+      />
 
       <div className="pt-20 transition-all duration-200 ml-[4.5rem] lg:ml-64">
         <div className="flex flex-col h-[calc(100vh-5rem)]">
@@ -354,12 +380,12 @@ const XandriaAISession = () => {
             
             <div className="flex items-center gap-3">
               <button
-                  onClick={startNewChat}
-                  className="px-4 py-2 flex gap-2 bg-purple-600/15 hover:bg-purple-800/15 rounded-lg transition-colors rounded-lg text-sm font-medium"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                 <span className="text">New </span> 
-                </button>
+                onClick={startNewChat}
+                className="px-4 py-2 flex gap-2 bg-purple-600/15 hover:bg-purple-800/15 rounded-lg transition-colors text-sm font-medium"
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span className="text">New</span> 
+              </button>
             </div>
           </div>
 
@@ -405,51 +431,44 @@ const XandriaAISession = () => {
                 <div className="text-center py-12">
                   <div className={`inline-flex items-center justify-center w-16 h-16 mb-4`}>
                     <Image
-                                src="/xandria.png"
-                                alt="XANDRIA logo"
-                                width={45}
-                                height={45}
-                                className='rounded-lg'
-                                priority
-                              />
+                      src="/xandria.png"
+                      alt="XANDRIA logo"
+                      width={45}
+                      height={45}
+                      className='rounded-lg'
+                      priority
+                    />
                   </div>
                   <h1 className="text-3xl font-bold mb-2">Start a New Conversation</h1>
                   <p className={`${mutedClass} mb-8`}>Ask me anything about Xandria</p>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl mx-auto mt-8">
-                      {suggestedPrompts.map((prompt, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setMessage(prompt.title)}
-                          className={`${cardClass} border ${borderClass} rounded-xl p-4 text-left transition-all hover:border-purple-500/50 group relative overflow-hidden`}
-                        >
-                          <div className="flex items-start gap-4">
-                            <div className="p-2.5 rounded-lg bg-purple-600/10 text-purple-600 shrink-0">
-                              <prompt.icon size={18} strokeWidth={2.5} />
-                            </div>
+                    {suggestedPrompts.map((prompt, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setMessage(prompt.title)}
+                        className={`${cardClass} border ${borderClass} rounded-xl p-4 text-left transition-all hover:border-purple-500/50 group relative overflow-hidden`}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="p-2.5 rounded-lg bg-purple-600/10 text-purple-600 shrink-0">
+                            <prompt.icon size={18} strokeWidth={2.5} />
+                          </div>
 
-                            <div className="flex-1 pr-4">
-                              <div className={`font-medium ${textClass} text-sm mb-0.5 flex items-center gap-1`}>
-                                {prompt.title}
-                              </div>
-                              <div className={`text-xs ${mutedClass} leading-relaxed`}>
-                                {prompt.desc}
-                              </div>
+                          <div className="flex-1 pr-4">
+                            <div className={`font-medium ${textClass} text-sm mb-0.5 flex items-center gap-1`}>
+                              {prompt.title}
                             </div>
-                            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <ArrowUpRight className={`w-3 h-3 ${mutedClass}`} />
+                            <div className={`text-xs ${mutedClass} leading-relaxed`}>
+                              {prompt.desc}
                             </div>
                           </div>
-                        </button>
-                      ))}
-                    </div>
-                </div>
-              )}
-
-              {/* Error Display */}
-              {error && (
-                <div className="bg-red-500 bg-opacity-10 border border-red-500 rounded-lg p-4">
-                  <p className="text-red-500">{error}</p>
+                          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <ArrowUpRight className={`w-3 h-3 ${mutedClass}`} />
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -467,13 +486,13 @@ const XandriaAISession = () => {
                   {msg.role === 'model' && (
                     <div className={`flex-shrink-0 w-8 h-8 flex items-center justify-center`}>
                       <Image
-                                  src="/xandria.png"
-                                  alt="XANDRIA logo"
-                                  width={45}
-                                  height={45}
-                                  className='rounded-lg'
-                                  priority
-                                />
+                        src="/xandria.png"
+                        alt="XANDRIA logo"
+                        width={45}
+                        height={45}
+                        className='rounded-lg'
+                        priority
+                      />
                     </div>
                   )}
                   

@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import Image from 'next/image';
+import { checkRateLimit, getRemainingTime } from '@/app/components/xandria-ai/rateLimitUtils';
 
 interface ChatInputProps {
   message: string;
@@ -7,9 +8,10 @@ interface ChatInputProps {
   onSend: () => void;
   isSending: boolean;
   darkMode: boolean;
+  onRateLimitError: (message: string) => void;
 }
 
-const ChatInput = ({ message, setMessage, onSend, isSending, darkMode }: ChatInputProps) => {
+const ChatInput = ({ message, setMessage, onSend, isSending, darkMode, onRateLimitError }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [selectedModel, setSelectedModel] = useState<'xandria-base-knl' | 'xandria-elite'>('xandria-base-knl');
   const [showModels, setShowModels] = useState(false);
@@ -34,20 +36,31 @@ const ChatInput = ({ message, setMessage, onSend, isSending, darkMode }: ChatInp
   }, [message]);
 
   useEffect(() => {
-  const handleClickOutside = (e: MouseEvent) => {
-    if (modelRef.current && !modelRef.current.contains(e.target as Node)) {
-      setShowModels(false);
+    const handleClickOutside = (e: MouseEvent) => {
+      if (modelRef.current && !modelRef.current.contains(e.target as Node)) {
+        setShowModels(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSendClick = () => {
+    // Check rate limit before sending
+    const rateLimit = checkRateLimit();
+    if (!rateLimit.allowed) {
+      const timeRemaining = getRemainingTime(rateLimit.resetTime);
+      onRateLimitError(`You've reached your daily message limit. Please try again in ${timeRemaining}.`);
+      return;
     }
+    onSend();
   };
-  
-  document.addEventListener('mousedown', handleClickOutside);
-  return () => document.removeEventListener('mousedown', handleClickOutside);
-}, []);
 
   return (
     <div className={bgClass}>
       <div className="max-w-4xl mx-auto px-4 py-4">
-        <div className={`${cardClass} border ${borderClass} rounded-2xl  shadow-sm`}>
+        <div className={`${cardClass} border ${borderClass} rounded-2xl shadow-sm`}>
           <div className="flex items-end gap-3 p-3">
             
             <div className="flex-1">
@@ -55,7 +68,7 @@ const ChatInput = ({ message, setMessage, onSend, isSending, darkMode }: ChatInp
               <div className="relative flex-shrink-0" ref={modelRef}>
                 <button
                   onClick={() => setShowModels(!showModels)}
-                  className={`p-2 rounded-lg  transition-colors flex items-center gap-1`}
+                  className={`p-2 rounded-lg transition-colors flex items-center gap-1`}
                   title="Select Model"
                 >
                   <Image
@@ -77,7 +90,6 @@ const ChatInput = ({ message, setMessage, onSend, isSending, darkMode }: ChatInp
                         setSelectedModel('xandria-base-knl');
                         setShowModels(false);
                       }}
-                      
                       className={`w-full flex items-center gap-2 p-2 rounded-lg ${selectedModel === 'xandria-base-knl' ? 'bg-purple-600/15' : ''}`}
                     >
                       <Image src="/xandria.png" alt="Base" width={20} height={20} className='rounded' />
@@ -107,7 +119,7 @@ const ChatInput = ({ message, setMessage, onSend, isSending, darkMode }: ChatInp
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    onSend();
+                    handleSendClick();
                   }
                 }}
                 placeholder="Ask anything..."
@@ -126,7 +138,7 @@ const ChatInput = ({ message, setMessage, onSend, isSending, darkMode }: ChatInp
             </div>
             
             <button
-              onClick={onSend}
+              onClick={handleSendClick}
               disabled={!message.trim() || isSending}
               className={`p-2.5 rounded-lg transition-all flex-shrink-0 ${
                 message.trim() && !isSending
