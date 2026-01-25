@@ -318,7 +318,7 @@ const XandriaAISession = () => {
 
   const suggestedPrompts = [
     { icon: Settings2, title: 'How do I set up a pnode?', desc: 'Get started with pnodes' },
-    { icon: Coins, title: 'Explain Xandria tokenomics', desc: 'Learn about the ecosystem' },
+    { icon: Coins, title: 'Explain Xand tokenomics', desc: 'Learn about the ecosystem' },
     { icon: BarChart3, title: 'Check my node performance', desc: 'Monitor your nodes' },
     { icon: Wrench, title: 'Troubleshoot node issues', desc: 'Fix common problems' }
   ];
