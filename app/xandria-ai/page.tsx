@@ -12,6 +12,8 @@ import SessionsSidebar from '@/app/components/xandria-ai/SessionsSidebar';
 import LoadingSkeleton from '@/app/components/xandria-ai/LoadingSkeleton';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import ErrorModal from '@/app/components/xandria-ai/ErrorModal';
+import { checkRateLimit, incrementRateLimit, getRemainingTime } from '@/app/components/xandria-ai/rateLimitUtils';
 import { ExternalLink, Settings2, Coins, BarChart3, Wrench, ArrowUpRight } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -52,6 +54,9 @@ const XandriaAI = () => {
   const [showSessions, setShowSessions] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
 
+  // Error modal states
+  const [errorModal, setErrorModal] = useState({ isOpen: false, message: '' });
+
   const bgClass = darkMode ? 'bg-[#0B0F14]' : 'bg-gray-50';
   const cardClass = darkMode 
     ? 'bg-[#111827] bg-opacity-50 backdrop-blur-lg' 
@@ -60,6 +65,14 @@ const XandriaAI = () => {
   const mutedClass = darkMode ? 'text-gray-400' : 'text-gray-600';
   const borderClass = darkMode ? 'border-gray-700' : 'border-gray-200';
   const hoverClass = darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100';
+
+  const showError = (message: string) => {
+    setErrorModal({ isOpen: true, message });
+  };
+
+  const closeError = () => {
+    setErrorModal({ isOpen: false, message: '' });
+  };
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -139,6 +152,14 @@ const XandriaAI = () => {
 
   const handleSend = async () => {
     if (!message.trim() || !connected || !publicKey || isSending) return;
+
+     // Check rate limit
+        const rateLimit = checkRateLimit();
+        if (!rateLimit.allowed) {
+          const timeRemaining = getRemainingTime(rateLimit.resetTime);
+          showError(`You've reached your daily message limit. Please try again in ${timeRemaining}.`);
+          return;
+        }
     
     const userMessage = message.trim();
     const isFirstMessage = messages.length === 0;
@@ -173,6 +194,10 @@ const XandriaAI = () => {
       const data = await response.json();
 
       if (data.success) {
+
+        // Increment rate limit counter only on successful send
+                incrementRateLimit();
+
         // Update URL on first message without reloading
         if (isFirstMessage) {
           window.history.pushState({}, '', `/xandria-ai/${sessionId}`);
@@ -353,6 +378,12 @@ const XandriaAI = () => {
     <div ref={containerRef} className={`min-h-screen ${bgClass} ${textClass} transition-colors duration-300`}>
       <Header />
       <Sidebar />
+      <ErrorModal 
+        isOpen={errorModal.isOpen} 
+        onClose={closeError} 
+        message={errorModal.message}
+        darkMode={darkMode}
+      />
 
       <div className="pt-20 pb-24 lg:pb-8 px-4 sm:px-6 lg:ml-64 min-h-screen">
         <div className="flex flex-col h-[calc(100vh-5rem)]">
@@ -507,6 +538,7 @@ const XandriaAI = () => {
               onSend={handleSend}
               isSending={isSending}
               darkMode={darkMode}
+              onRateLimitError={showError}
             />
           )}
 
