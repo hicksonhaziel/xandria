@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_AI_URL || 'https://xandria-ai-rag.onrender.com';
+const API_BASE_URL = 'https://xandria-ai-rag.onrender.com';
 
 export async function POST(request: NextRequest) {
   try {
