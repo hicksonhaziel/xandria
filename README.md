@@ -3,9 +3,9 @@
 ![XandViz Banner](https://xandria-eight.vercel.app/xandria.png)
 
 > **Submission for:** Xandeum pNode Analytics Platform Bounty  
-> **Built by:** Hickson Haziel 
+> **Built by:** Hickson Haziel  
 > **Live Demo:** [https://xandria-eight.vercel.app](https://xandria-eight.vercel.app)  
-> **Demo Video:** [https://youtu.be/1EVQZr022ew](https://youtu.be/1EVQZr022ew)
+> **Demo Video:** [https://youtu.be/1EVQZr022ew](https://youtu.be/1EVQZr022ew)  
 > **Read the full story:** [Building Xandria on Medium](https://medium.com/@hicksonhaziel/building-xandria-a-next-generation-analytics-platform-for-xandeum-pnodes-4b1d83924889)
 
 ---
@@ -21,7 +21,9 @@ Xandria is a next-generation analytics platform for Xandeum pNodes that goes bey
 - Comprehensive pNode information display
 - Advanced search, filter, and sort capabilities
 - Live data updates via Redis
-- Historical data
+- Historical data tracking (7-day retention)
+- **Managers Dashboard** - Track pNode operators, their nodes, and NFT holdings via Helius integration
+- **Xandria AI** - Intelligent chat assistant powered by RAG for network insights
 
 #### **Unique Innovations**
 - **XandScore™** - Proprietary performance scoring algorithm (0-100 scale)
@@ -29,7 +31,7 @@ Xandria is a next-generation analytics platform for Xandeum pNodes that goes bey
 - **Predictive Analytics** - Performance trends and forecasting
 - **Operator Dashboard** - Personalized insights and recommendations
 - **Public API** - RESTful API for ecosystem integration
-- **AI** - AI Analysis
+- **AI-Powered Insights** - Natural language queries about network data
 
 #### **User Experience**
 - Modern glassmorphism design
@@ -53,16 +55,22 @@ Xandria is a next-generation analytics platform for Xandeum pNodes that goes bey
 
 **Backend:**
 - Next.js API routes
-- Uptash Redis for real-time updates
-- HTTP requests
+- Upstash Redis for real-time updates
+- PostgreSQL for data persistence
+- Python FastAPI (Xandria AI RAG service)
+
+**External Integrations:**
+- Helius API for NFT and wallet data
+- Xandria AI RAG ([github.com/hicksonhaziel/xandria-ai-rag](https://github.com/hicksonhaziel/xandria-ai-rag))
 
 **Deployment:**
-- Vercel (serverless)
+- Vercel (frontend/API)
+- Render (AI service)
 - Automatic CI/CD
 - Edge caching
 
-**Cron job:**
-- Github workflows cron job
+**Automation:**
+- GitHub Actions cron jobs
 
 ### System Architecture
 
@@ -70,7 +78,8 @@ Xandria is a next-generation analytics platform for Xandeum pNodes that goes bey
 ┌─────────────────────────────────────────────────────────────┐
 │                        User Browser                          │
 │  ┌────────────┐  ┌──────────────┐  ┌──────────────┐       │
-│  │  Dashboard │  │ 3D Topology  │  │  API Docs    │       │
+│  │  Dashboard │  │ 3D Topology  │  │  Managers    │       │
+│  │            │  │              │  │  Xandria AI  │       │
 │  └────────────┘  └──────────────┘  └──────────────┘       │
 └───────────────────────────┬─────────────────────────────────┘
                             │
@@ -86,13 +95,14 @@ Xandria is a next-generation analytics platform for Xandeum pNodes that goes bey
 │  └──────────────┘  └──────────────┘  └──────────────┘    │
 └───────────────────────────┬─────────────────────────────────┘
                             │
-                            ▼
-┌─────────────────────────────────────────────────────────────┐
-│                  Xandeum Network (DevNet)                    │
-│  ┌────────────────────┐        ┌────────────────────┐      │
-│  │  Gossip Protocol   │◄──────►│    pRPC Endpoint   │      │
-│  └────────────────────┘        └────────────────────┘      │
-└─────────────────────────────────────────────────────────────┘
+        ┌───────────────────┼───────────────────┐
+        │                   │                   │
+        ▼                   ▼                   ▼
+┌──────────────┐   ┌──────────────┐   ┌──────────────┐
+│   Helius     │   │  Xandria AI  │   │   Xandeum    │
+│     API      │   │     RAG      │   │   Network    │
+│              │   │  (Python)    │   │  (DevNet)    │
+└──────────────┘   └──────────────┘   └──────────────┘
 ```
 
 ---
@@ -103,8 +113,9 @@ Xandria is a next-generation analytics platform for Xandeum pNodes that goes bey
 
 - Node.js 18+ and npm
 - Git
-- A Vercel account (for deployment)
-- Database (postgresql)
+- PostgreSQL database
+- Upstash Redis account
+- Vercel account (for deployment)
 
 ### Installation
 
@@ -118,7 +129,7 @@ npm install
 
 # Set up environment variables
 cp .env.example .env.local
-# Edit .env.local with your Xandeum endpoints
+# Edit .env.local with your credentials
 
 # Run development server
 npm run dev
@@ -126,10 +137,34 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to see the application.
 
-### databse
+### Database Setup
 
-copy /database.sql and run it on your postgresql 
+```bash
+# Copy the database schema
+# Located in /database.sql
 
+# Run it on your PostgreSQL instance
+psql -U your_user -d your_database -f database.sql
+```
+
+### Environment Variables
+
+```env
+# Database
+DATABASE_URL=postgresql://...
+
+# Redis
+UPSTASH_REDIS_REST_URL=https://...
+UPSTASH_REDIS_REST_TOKEN=...
+
+# Helius (for Manager features)
+HELIUS_API_KEY=...
+
+# Xandeum Network
+XANDEUM_RPC_ENDPOINT=...
+```
+
+---
 
 ## 📖 Usage Guide
 
@@ -139,7 +174,7 @@ copy /database.sql and run it on your postgresql
    - Search for your pNode by ID or pubkey
    - View real-time performance metrics
    - Check your XandScore™ and grade
-   - And data history
+   - Access 7-day historical data
 
 2. **Compare Performance**
    - See how you rank against network average
@@ -151,6 +186,23 @@ copy /database.sql and run it on your postgresql
    - Check version adoption rates
    - Monitor network health
 
+4. **Ask Xandria AI**
+   - Natural language queries about your node
+   - Get optimization recommendations
+   - Understand network trends
+
+### For Managers
+
+1. **Track Your Operations**
+   - View all nodes under your management
+   - Monitor collective performance
+   - See NFT holdings via Helius integration
+
+2. **Portfolio Overview**
+   - Aggregate statistics across all nodes
+   - Performance comparisons
+   - Resource utilization
+
 ### For Researchers/Developers
 
 1. **Network Analysis**
@@ -161,16 +213,21 @@ copy /database.sql and run it on your postgresql
 2. **API Integration**
    ```bash
    # Get all pNodes
-   curl https://xandviz.vercel.app/api/pnodes
+   curl https://xandria-eight.vercel.app/api/pnodes
    
    # Get specific pNode
-   curl https://xandviz.vercel.app/api/pnodes/[pubkey]
+   curl https://xandria-eight.vercel.app/api/pnodes/[pubkey]
    
-   # Get pNode xandscore™
-   curl https://xandviz.vercel.app/api/xandscore/[pubkey]
+   # Get pNode XandScore™
+   curl https://xandria-eight.vercel.app/api/xandscore/[pubkey]
 
-   # Get historic data of pNode
-   curl https://xandviz.vercel.app/api/analytics/node/[pubkey]
+   # Get historical data
+   curl https://xandria-eight.vercel.app/api/analytics/node/[pubkey]
+   
+   # Chat with Xandria AI
+   curl -X POST https://xandria-eight.vercel.app/api/ai \
+     -H "Content-Type: application/json" \
+     -d '{"action": "chat", "message": "What is my node performance?"}'
    ```
 
 ---
@@ -198,6 +255,29 @@ The XandScore™ is a proprietary scoring system (0-100) that evaluates pNode pe
 - D (60-69): Poor
 - F (<60): Failing
 
+### Managers Dashboard
+
+Track pNode operators and their infrastructure:
+- Aggregate node statistics per manager
+- NFT holdings via Helius API
+- Performance comparisons across managed nodes
+- Resource allocation insights
+
+### Xandria AI
+
+Intelligent assistant powered by RAG (Retrieval-Augmented Generation):
+- Natural language queries about network data
+- Personalized recommendations
+- Performance analysis and insights
+- Historical trend explanations
+- Session-based conversation memory
+
+**AI Architecture:**
+- Python FastAPI backend ([xandria-ai-rag](https://github.com/hicksonhaziel/xandria-ai-rag))
+- Vector database for document retrieval
+- Context-aware responses
+- Multi-session support
+
 ### 3D Network Visualization
 
 Interactive Three.js-powered visualization showing:
@@ -215,28 +295,24 @@ Interactive Three.js-powered visualization showing:
 
 ### Real-Time Updates
 
-Xandria maintains WebSocket connection to gossip protocol for:
-- Live pNode status changes
+Live data via Redis and gossip protocol:
+- pNode status changes
 - Performance metric updates
 - Network events
 - Connection changes
 
-Update frequency: Every 30 seconds
+**Update frequency:** Every 30 seconds
 
-### Historical Data Keep
+### Historical Data
 
-Xandria stors a node data for 7 days for:
-- Node performance tracking
-- Performance metric updates
-- Connection changes over time
-
-Update frequency: Every 30 seconds
+7-day data retention for:
+- Performance tracking
+- Trend analysis
+- Metric comparisons
 
 ---
 
 ## 🔌 API Documentation
-
-
 
 ### Endpoints
 
@@ -249,46 +325,13 @@ GET /api/pnodes
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "id": "pnode-EcTqXgB6",
-      "pubkey": "EcTqXgB6VJStAtBZAXcjLHf5ULj41H1PFZQ17zKosbhL",
-      "version": "0.8.0",
-      "responseTime": 0,
-      "status": "active",
-      "uptime": 1170196,
-      "lastSeen": 1766940033000,
-      "rpcPort": 6000,
-      "ipAddress": "173.212.207.32",
-      "isPublic": true,
-      "storageCommitted": 340000000000,
-      "storageUsed": 50591,
-      "storageUsagePercent": 0.000014879705882352,
-      "scoreBreakdown": {
-        "total": 83.7,
-        "uptime": 30,
-        "responseTime": 24.3,
-        "storage": 4.4,
-        "version": 15,
-        "reliability": 10,
-        "grade": "B",
-        "color": "text-blue-500"
-      },
-      "score": 83.7
-    }  
-  ],
+  "data": [...],
   "count": 252,
   "stats": {
     "total": 252,
     "active": 199,
-    "syncing": 5,
-    "offline": 48,
-    "avgScore": 68.0198412698413,
-    "totalStorage": 387995421228845,
-    "usedStorage": 5009305878
-  },
-  "cached": false,
-  "timestamp": 1766940041012
+    "avgScore": 68.02
+  }
 }
 ```
 
@@ -297,168 +340,46 @@ GET /api/pnodes
 GET /api/pnodes/[pubkey]
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "id": "pnode-74h474xG",
-    "pubkey": "74h474xGaHCeJdofjdGU12oNuBYf8oQRvBAkReQ2K8L6",
-    "version": "0.8.0",
-    "responseTime": 0,
-    "status": "active",
-    "uptime": 1204892,
-    "lastSeen": 1766940246000,
-    "rpcPort": 6000,
-    "ipAddress": "161.97.181.230",
-    "isPublic": false,
-    "storageCommitted": 368000000000,
-    "storageUsed": 55210,
-    "storageUsagePercent": 0.000015002717391304,
-    "private": true,
-    "scoreBreakdown": {
-      "total": 84.3,
-      "uptime": 30,
-      "responseTime": 24.5,
-      "storage": 4.8,
-      "version": 15,
-      "reliability": 10,
-      "grade": "B",
-      "color": "text-blue-500"
-    },
-    "score": 84.3,
-    "networkComparison": {
-      "uptimePercentile": 89,
-      "storagePercentile": 85,
-      "networkAverage": {
-        "uptime": 748137.370517928,
-        "storage": 1545297545062.17,
-        "activeNodeCount": 209
-      },
-      "totalNodes": 251
-    },
-    "recommendations": []
-  },
-  "cached": false,
-  "timestamp": 1766940251656
-}
-```
-#### Get pNode xandscore
+#### Get XandScore
 ```http
 GET /api/xandscore/[pubkey]
 ```
 
-**Response:**
-```json
-{
-  "xandscore": {
-    "score": 84.6,
-    "pubkey": "74h474xGaHCeJdofjdGU12oNuBYf8oQRvBAkReQ2K8L6"
-  }
-}
-```
-
-#### Get Historical data of a pNode
+#### Get Historical Data
 ```http
 GET /api/analytics/node/[pubkey]
 ```
 
-**Response:**
-```json
+#### Xandria AI Chat
+```http
+POST /api/ai
+Content-Type: application/json
+
 {
-  "success": true,
-  "data": {
-    "pubkey": "74h474xGaHCeJdofjdGU12oNuBYf8oQRvBAkReQ2K8L6",
-    "history": [
-      {
-        "timestamp": 1766706300344,
-        "uptime": 970791,
-        "score": 82.4,
-        "storageCommitted": 368000000000,
-        "storageUsed": 55210,
-        "storageUsagePercent": 0.000015002717391304
-      },
-      {
-        "timestamp": 1766713838663,
-        "uptime": 978279,
-        "score": 80.8,
-        "storageCommitted": 368000000000,
-        "storageUsed": 55210,
-        "storageUsagePercent": 0.000015002717391304
-      },
-    ],
-    "stats": {
-      "dataPoints": 18,
-      "timeRange": {
-        "start": 1766706300344,
-        "end": 1766938408336
-      },
-      "metrics": {
-        "uptime": {
-          "min": 970791,
-          "max": 1202991,
-          "avg": 1174413,
-          "current": 1202991,
-          "previous": 970791,
-          "change": 232200
-        },
-        "score": {
-          "min": 80.8,
-          "max": 84.2,
-          "avg": 82.7333333333333,
-          "current": 81.6,
-          "previous": 82.4,
-          "change": -0.800000000000011
-        },
-        "xanScore": {
-          "min": 81.6,
-          "max": 84.2,
-          "avg": 82.7125,
-          "current": 81.6,
-          "previous": 83.3,
-          "change": -1.7
-        },
-        "cpuPercent": null,
-        "ramPercent": null,
-        "storagePercent": {
-          "min": 0.000015002717391304,
-          "max": 0.000015002717391304,
-          "avg": 0.000015002717391304,
-          "current": 0.000015002717391304,
-          "previous": 0.000015002717391304,
-          "change": 0
-        }
-      }
-    }
-  }
+  "action": "chat",
+  "message": "How is my node performing?",
+  "session_id": "optional-session-id",
+  "wallet_address": "optional-wallet"
 }
 ```
 
----
-
-
+**AI Actions:**
+- `chat` - Send message
+- `regenerate` - Regenerate last response
+- `rate` - Rate AI response
+- `history` - Get chat history
+- `sessions` - Get user sessions
 
 ---
 
 ## 📦 Deployment
 
-### Vercel (Recommended)
+See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
 
-1. **Connect Repository**
-   ```bash
-   vercel login
-   vercel
-   ```
-
-2. **Set Environment Variables**
-   - Go to Vercel Dashboard
-   - Project Settings → Environment Variables
-   - Add all required variables
-
-3. **Deploy**
-   ```bash
-   vercel --prod
-   ```
+Quick deploy to Vercel:
+```bash
+vercel --prod
+```
 
 ---
 
@@ -493,6 +414,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **Xandeum Labs** - For creating the pNode network and hosting this bounty
 - **Solana Community** - For inspiration from validator dashboards
 - **Open Source Community** - For the amazing tools and libraries
+- **Helius** - For providing robust NFT and wallet APIs
 
 ---
 
@@ -501,32 +423,34 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - **Discord**: Join [Xandeum Discord](https://discord.com/invite/mGAxAuwnR9)
 - **Email**: hicksonhaziel@gmail.com
 - **Twitter**: [@devhickson](https://twitter.com/devhickson)
+- **GitHub**: [hicksonhaziel/xandria](https://github.com/hicksonhaziel/xandria)
 
 ---
 
 ## 🎯 Roadmap
 
-### Phase 1 (Current)
+### Phase 1 ✅ (Completed)
 - [x] Core pNode display
 - [x] XandScore™ algorithm
 - [x] 3D visualization
 - [x] Real-time updates
 - [x] Historical data tracking
+- [x] Managers dashboard
+- [x] Xandria AI integration
 
-### Phase 2 (Next 2 weeks)
-
+### Phase 2 (In Progress)
 - [ ] Performance predictions
 - [ ] Alert system for operators
 - [ ] Mobile app (React Native)
+- [ ] Enhanced AI capabilities
 
-### Phase 3 (1 month)
+### Phase 3 (Planned)
 - [ ] Staking integration
 - [ ] Reward calculator
 - [ ] Network governance insights
-- [ ] Advanced analytics
+- [ ] Advanced analytics dashboard
 
 ---
-
 
 **Built with ❤️ for the Xandeum Community**
 
@@ -542,18 +466,22 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ### 3D Network View
 ![3D View](https://xandria-eight.vercel.app/3d.png)
 
-### pNode Details
-![Details](https://xandria-eight.vercel.app/Dashboard.png)
+### Managers Dashboard
+Track operators, nodes, and NFT holdings in one place.
+
+### Xandria AI
+Get intelligent insights through natural conversation.
 
 ### Light Mode
-![Ligt Mode](https://xandria-eight.vercel.app/Lmode.png)
+![Light Mode](https://xandria-eight.vercel.app/Lmode.png)
 
 ---
 
 ## 🔗 Links
 
 - **Live Demo**: https://xandria-eight.vercel.app
-- **GitHub**: https://github.com/hicksonhaziel/xandria
-- **Demo Video**: [https://youtu.be/1EVQZr022ew](https://youtu.be/1EVQZr022ew)
+- **GitHub (Frontend)**: https://github.com/hicksonhaziel/xandria
+- **GitHub (AI RAG)**: https://github.com/hicksonhaziel/xandria-ai-rag
+- **Demo Video**: https://youtu.be/1EVQZr022ew
 - **Xandeum Network**: https://xandeum.network
 - **Medium Article**: https://medium.com/@hicksonhaziel/building-xandria-a-next-generation-analytics-platform-for-xandeum-pnodes-4b1d83924889
