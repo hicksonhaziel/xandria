@@ -8,9 +8,10 @@ import type { PNodeDetailResponse } from '@/app/types/pnode-detail';
 interface Props {
   node: PNodeDetailResponse['data'];
   darkMode: boolean;
+  nodeNetwork: 'devnet' | 'mainnet'
 }
 
-export default function PNodeHeader({ node, darkMode }: Props) {
+export default function PNodeHeader({ node, darkMode, nodeNetwork}: Props) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
 
@@ -46,6 +47,9 @@ export default function PNodeHeader({ node, darkMode }: Props) {
                 <Copy className="w-4 h-4" />
               )}
             </button>
+            <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColor}`}>
+              {nodeNetwork}
+            </span>
             <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColor}`}>
               {node.status}
             </span>

@@ -112,7 +112,7 @@ export default function PNodeDetailPage() {
           {/* Data display */}
           {data && !networkLoading && (
             <>
-              <PNodeHeader node={data} darkMode={darkMode} />
+              <PNodeHeader node={data} nodeNetwork={nodeNetwork} darkMode={darkMode}  />
               
               {/* Network badge */}
               <div className="mb-4">
