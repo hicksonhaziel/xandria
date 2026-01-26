@@ -82,7 +82,7 @@ export default function PNodeDetailPage() {
       <Sidebar />
       
       <div 
-        className={`pt-20 transition-all duration-200 ml-[4.5rem] lg:ml-64`}
+        className={`pt-20 pb-24 lg:pb-8 px-4 sm:px-6 lg:ml-64 min-h-screen`}
       >
         <div className="container mx-auto px-4 md:px-0.5 sm:px-0.5 py-8">
         
