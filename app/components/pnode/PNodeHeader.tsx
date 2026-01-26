@@ -47,7 +47,11 @@ export default function PNodeHeader({ node, darkMode, nodeNetwork}: Props) {
                 <Copy className="w-4 h-4" />
               )}
             </button>
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColor}`}>
+            <span className={`px-3 py-1 rounded-full ${
+                  nodeNetwork === 'mainnet' 
+                    ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
+                    : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                } text-xs font-medium`}>
               {nodeNetwork}
             </span>
             <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColor}`}>

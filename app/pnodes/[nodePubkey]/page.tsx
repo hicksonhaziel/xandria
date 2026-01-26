@@ -114,17 +114,6 @@ export default function PNodeDetailPage() {
             <>
               <PNodeHeader node={data} nodeNetwork={nodeNetwork} darkMode={darkMode}  />
               
-              {/* Network badge */}
-              <div className="mb-4">
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                  nodeNetwork === 'mainnet' 
-                    ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                    : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
-                }`}>
-                  {nodeNetwork === 'mainnet' ? '🟢 Mainnet' : '🔵 Devnet'}
-                </span>
-              </div>
-              
               <LiveUpdateIndicator 
                 lastUpdate={lastUpdate}
                 refreshing={refreshing} 
