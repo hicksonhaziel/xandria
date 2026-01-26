@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prpcClient } from '@/app/lib/prpc';
+import { devnetClient, mainnetClient, getClientForNetwork, type NetworkType } from '@/app/lib/prpc';
 import { calculateXandScore } from '@/app/lib/scoring';
 import { RedisService } from '@/app/lib/redis-service';
 
@@ -11,31 +11,34 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const minScore = searchParams.get('minScore');
     const useCache = searchParams.get('cache') !== 'false';
-    const network = searchParams.get('network') || 'devnet'; 
+    const network = (searchParams.get('network') || 'devnet') as NetworkType;
+
+    // Validate network parameter
+    if (network !== 'devnet' && network !== 'mainnet') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid network parameter',
+          message: 'Network must be either "devnet" or "mainnet"',
+        },
+        { status: 400 }
+      );
+    }
 
     // Try cache with network-specific key
     if (useCache) {
-      const cached = await RedisService.getAllNodes();
-      const stats = await RedisService.getNetworkStats();
+      const cached = await RedisService.getAllNodes(network);
+      const stats = await RedisService.getNetworkStats(network);
       
       if (cached && Array.isArray(cached)) {
         let filtered = cached;
         
-        // Filter by network first
-        if (network === 'mainnet') {
-          // Fetch mainnet credits to identify mainnet nodes
-          const mainnetPubkeys = await fetchMainnetPubkeys();
-          filtered = filtered.filter((n: any) => mainnetPubkeys.has(n.pubkey));
-        } else {
-          // Devnet: exclude mainnet nodes
-          const mainnetPubkeys = await fetchMainnetPubkeys();
-          filtered = filtered.filter((n: any) => !mainnetPubkeys.has(n.pubkey));
-        }
-        
+        // Apply status filter
         if (status && status !== 'all') {
           filtered = filtered.filter((n: any) => n.status === status);
         }
         
+        // Apply score filter
         if (minScore) {
           filtered = filtered.filter((n: any) => n.score >= parseFloat(minScore));
         }
@@ -52,8 +55,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Fetch fresh data
-    const pnodes = await prpcClient.getClusterNodes();
+    // Fetch fresh data from the appropriate network client
+    const client = getClientForNetwork(network);
+    const pnodes = await client.getClusterNodes(`cluster-${network}`);
     
     if (!pnodes || pnodes.length === 0) {
       return NextResponse.json({
@@ -75,25 +79,15 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Fetch mainnet node pubkeys
-    const mainnetPubkeys = await fetchMainnetPubkeys();
-
-    // Filter by network
-    let networkFilteredNodes = pnodes;
-    if (network === 'mainnet') {
-      networkFilteredNodes = pnodes.filter(n => mainnetPubkeys.has(n.pubkey));
-    } else {
-      networkFilteredNodes = pnodes.filter(n => !mainnetPubkeys.has(n.pubkey));
-    }
-
-    // Calculate network averages based on filtered nodes
+    // Calculate network averages for scoring
     const networkAvg = {
-      uptime: networkFilteredNodes.reduce((sum, n) => sum + n.uptime, 0) / (networkFilteredNodes.length || 1),
-      storage: networkFilteredNodes.reduce((sum, n) => sum + n.storageCommitted, 0) / (networkFilteredNodes.length || 1),
-      activeNodeCount: networkFilteredNodes.filter(n => n.status === 'active').length,
+      uptime: pnodes.reduce((sum, n) => sum + n.uptime, 0) / (pnodes.length || 1),
+      storage: pnodes.reduce((sum, n) => sum + n.storageCommitted, 0) / (pnodes.length || 1),
+      activeNodeCount: pnodes.filter(n => n.status === 'active').length,
     };
 
-    const pnodesWithScores = networkFilteredNodes.map(pnode => {
+    // Calculate scores for all nodes
+    const pnodesWithScores = pnodes.map(pnode => {
       const breakdown = calculateXandScore(pnode, networkAvg);
       return {
         ...pnode,
@@ -111,6 +105,7 @@ export async function GET(request: NextRequest) {
       filtered = filtered.filter(n => n.score >= parseFloat(minScore));
     }
 
+    // Calculate network statistics
     const stats = {
       total: pnodesWithScores.length,
       active: pnodesWithScores.filter(n => n.status === 'active').length,
@@ -121,19 +116,12 @@ export async function GET(request: NextRequest) {
       usedStorage: pnodesWithScores.reduce((sum, n) => sum + n.storageUsed, 0),
     };
 
-    // Cache results in background (cache all nodes, filter on retrieval)
+    // Cache results in background with network-specific keys
     Promise.all([
-      RedisService.cacheAllNodes(pnodes.map(pnode => {
-        const breakdown = calculateXandScore(pnode, networkAvg);
-        return {
-          ...pnode,
-          scoreBreakdown: breakdown,
-          score: breakdown.total,
-        };
-      })),
-      RedisService.cacheNetworkStats(stats),
-      RedisService.setLastUpdate()
-    ]).catch(err => console.error('Failed to cache data:', err));
+      RedisService.cacheAllNodes(pnodesWithScores, network),
+      RedisService.cacheNetworkStats(stats, network),
+      RedisService.setLastUpdate(network)
+    ]).catch(err => console.error(`Failed to cache ${network} data:`, err));
 
     return NextResponse.json({
       success: true,
@@ -154,37 +142,5 @@ export async function GET(request: NextRequest) {
       },
       { status: 500 }
     );
-  }
-}
-
-// Helper function to fetch mainnet node pubkeys
-async function fetchMainnetPubkeys(): Promise<Set<string>> {
-  try {
-    const endpoint = process.env.NEXT_PUBLIC_XANDEUM_MAINET_CREDIT_ENDPOINT;
-    if (!endpoint) {
-      console.warn('Mainnet credit endpoint not configured');
-      return new Set();
-    }
-
-    const response = await fetch(endpoint);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch mainnet credits: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const pubkeys = new Set<string>();
-    
-    if (data.pods_credits && Array.isArray(data.pods_credits)) {
-      data.pods_credits.forEach((pod: { pod_id: string }) => {
-        if (pod.pod_id) {
-          pubkeys.add(pod.pod_id);
-        }
-      });
-    }
-
-    return pubkeys;
-  } catch (error) {
-    console.error('Error fetching mainnet pubkeys:', error);
-    return new Set();
   }
 }

@@ -60,6 +60,11 @@ interface PRPCClientConfig {
 }
 
 /**
+ * Network type for Xandeum
+ */
+export type NetworkType = 'devnet' | 'mainnet';
+
+/**
  * pRPC Client for Xandeum cluster communication
  * 
  * Handles:
@@ -93,11 +98,12 @@ class PRPCClient {
    * Implements caching to reduce unnecessary network calls.
    * Cache is automatically invalidated after TTL expires.
    * 
+   * @param cacheKey Optional cache key for network-specific caching
    * @returns Promise resolving to array of parsed PNode objects
    */
-  async getClusterNodes(): Promise<PNode[]> {
+  async getClusterNodes(cacheKey: string = 'cluster'): Promise<PNode[]> {
     // Check cache first
-    const cached = this.cache.get('cluster');
+    const cached = this.cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < this.cacheTTL) {
       return cached.data;
     }
@@ -129,7 +135,7 @@ class PRPCClient {
       const pods = response.data?.result?.pods ?? [];
       const parsed = this.parsePNodes(pods);
       
-      this.cache.set('cluster', { 
+      this.cache.set(cacheKey, { 
         data: parsed, 
         timestamp: Date.now() 
       });
@@ -148,10 +154,11 @@ class PRPCClient {
    * individual RPC endpoint. For private nodes, returns basic info only.
    * 
    * @param pubkey Public key of the node to query
+   * @param cacheKey Optional cache key for network-specific lookup
    * @returns Promise resolving to PNodeWithDetails or null if not found
    */
-  async getPNodeInfo(pubkey: string): Promise<PNodeWithDetails | null> {
-    const allPods = await this.getClusterNodes();
+  async getPNodeInfo(pubkey: string, cacheKey: string = 'cluster'): Promise<PNodeWithDetails | null> {
+    const allPods = await this.getClusterNodes(cacheKey);
     const normalizedPubkey = pubkey.trim().toLowerCase();
 
     // Find the matching pod
@@ -374,14 +381,32 @@ class PRPCClient {
 }
 
 /**
- * Singleton pRPC client instance
- * 
- * Uses environment variable for RPC endpoint with fallback
+ * Singleton pRPC client instances for devnet and mainnet
  */
-export const prpcClient = new PRPCClient({
-  endpoint: process.env.NEXT_PUBLIC_XANDEUM_RPC_ENDPOINT || 
+export const devnetClient = new PRPCClient({
+  endpoint: process.env.NEXT_PUBLIC_XANDEUM_DEVNET_RPC_ENDPOINT || 
             'http://173.212.203.145:6000/rpc',
   timeout: 8000,
   cacheTTL: 30000,
   detailsTimeout: 3000,
 });
+
+export const mainnetClient = new PRPCClient({
+  endpoint: process.env.NEXT_PUBLIC_XANDEUM_MAINNET_RPC_ENDPOINT || 
+            'http://216.234.134.4:6000/rpc',
+  timeout: 8000,
+  cacheTTL: 30000,
+  detailsTimeout: 3000,
+});
+
+/**
+ * Get the appropriate client for a given network
+ * @param network The network type ('devnet' or 'mainnet')
+ * @returns The corresponding pRPC client
+ */
+export function getClientForNetwork(network: NetworkType): PRPCClient {
+  return network === 'mainnet' ? mainnetClient : devnetClient;
+}
+
+// Legacy export for backward compatibility
+export const prpcClient = devnetClient;
