@@ -636,7 +636,7 @@ const XandriaAISession = () => {
                           handleSend();
                         }
                       }}
-                      placeholder="Ask anything about Xandria..."
+                      placeholder="Ask anything about Xandeum..."
                       disabled={isSending}
                       className={`w-full bg-transparent outline-none resize-none ${textClass} placeholder:${mutedClass} disabled:opacity-50`}
                       rows={1}

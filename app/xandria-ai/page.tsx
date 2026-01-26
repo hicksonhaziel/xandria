@@ -389,7 +389,7 @@ const XandriaAI = () => {
         <div className="flex flex-col h-[calc(100vh-5rem)]">
           
           {/* Top Bar */}
-          <div className={`border-b ${borderClass} px-4 py-2 flex items-center justify-between`}>
+          <div className={` px-4 py-2 flex items-center justify-between`}>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowSessions(!showSessions)}
@@ -400,7 +400,6 @@ const XandriaAI = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </button>
-              <h1 className="text-md font-bold">Xandria AI</h1>
             </div>
             
             <div className="flex items-center gap-3">

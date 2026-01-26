@@ -122,7 +122,7 @@ const ChatInput = ({ message, setMessage, onSend, isSending, darkMode, onRateLim
                     handleSendClick();
                   }
                 }}
-                placeholder="Ask anything..."
+                placeholder="Ask anything about xandeum network..."
                 disabled={isSending}
                 className={`w-full bg-transparent outline-none resize-none ${textClass} placeholder:${mutedClass} disabled:opacity-50`}
                 rows={1}
