@@ -4,6 +4,7 @@ import type { PNodeDetailResponse } from '@/app/types/pnode-detail';
 interface UsePNodeInfoOptions {
   refreshInterval?: number; 
   autoRefresh?: boolean;
+  enabled?: boolean;
 }
 
 export function usePNodeInfo( 
@@ -11,7 +12,7 @@ export function usePNodeInfo(
   network: 'devnet' | 'mainnet' = 'devnet',
   options: UsePNodeInfoOptions = {}
 ) {
-  const { refreshInterval = 30000, autoRefresh = true } = options;
+  const { refreshInterval = 30000, autoRefresh = true, enabled = true } = options;
   
   const [data, setData] = useState<PNodeDetailResponse['data'] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,19 +52,21 @@ export function usePNodeInfo(
 
   // Initial fetch
   useEffect(() => {
+    if (enabled) {
     fetchPNode(false);
-  }, [fetchPNode]);
+  }
+  }, [fetchPNode, enabled]);
 
   // Auto-refresh interval
   useEffect(() => {
-    if (!autoRefresh || !pubkey) return;
+    if (!autoRefresh || !pubkey || !enabled) return;
 
     const interval = setInterval(() => {
       fetchPNode(true);
     }, refreshInterval);
 
     return () => clearInterval(interval);
-  }, [autoRefresh, pubkey, refreshInterval, fetchPNode]);
+  }, [autoRefresh, pubkey, refreshInterval, fetchPNode, enabled]);
 
   // Manual refresh function
   const refresh = useCallback(() => {

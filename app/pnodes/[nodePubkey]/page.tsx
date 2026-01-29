@@ -74,10 +74,14 @@ export default function PNodeDetailPage() {
   }, [nodePubkey]);
 
   const { data, loading, refreshing, error, lastUpdate, refresh } = usePNodeInfo(
-    nodePubkey,
-    nodeNetwork,
-    { refreshInterval: 30000, autoRefresh: true }
-  );
+  nodePubkey,
+  nodeNetwork,
+  { 
+    refreshInterval: 30000, 
+    autoRefresh: true,
+    enabled: !networkLoading 
+  }
+);
 
   const bgClass = darkMode ? 'bg-[#0B0F14]' : 'bg-gray-50';
   const textClass = darkMode ? 'text-gray-100' : 'text-gray-900';

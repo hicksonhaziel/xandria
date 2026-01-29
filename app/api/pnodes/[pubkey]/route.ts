@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prpcClient } from '@/app/lib/prpc';
+import { getClientForNetwork, type NetworkType } from '@/app/lib/prpc';
 import { calculateXandScore } from '@/app/lib/scoring';
 import { RedisService } from '@/app/lib/redis-service';
 
@@ -12,6 +12,22 @@ export async function GET(
   try {
     const { pubkey } = await context.params;
 
+    // Get network parameter from query string
+    const searchParams = request.nextUrl.searchParams;
+    const network = (searchParams.get('network') || 'devnet') as NetworkType;
+
+    // Validate network parameter
+    if (network !== 'devnet' && network !== 'mainnet') {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'Invalid network parameter',
+          message: 'Network must be either "devnet" or "mainnet"'
+        },
+        { status: 400 }
+      );
+    }
+
     if (!pubkey || pubkey.length < 32) {
       return NextResponse.json(
         { success: false, error: 'Invalid pubkey format' },
@@ -19,22 +35,27 @@ export async function GET(
       );
     }
 
-    const useCache = request.nextUrl.searchParams.get('cache') !== 'false';
+    const useCache = searchParams.get('cache') !== 'false';
 
-    // Try cache
+    // Try cache with network-specific key
     if (useCache) {
-      const cached = await RedisService.getNode(pubkey);
+      const cached = await RedisService.getNode(pubkey, network);
       if (cached) {
         return NextResponse.json({
           success: true,
           data: cached,
           cached: true,
+          network,
           timestamp: Date.now(),
         });
       }
     }
 
-    const pnode = await prpcClient.getPNodeInfo(pubkey);
+    // Get network-specific client
+    const client = getClientForNetwork(network);
+
+    // Fetch pNode from the correct network
+    const pnode = await client.getPNodeInfo(pubkey);
     if (!pnode) {
       return NextResponse.json(
         { success: false, error: 'pNode not found' },
@@ -42,7 +63,8 @@ export async function GET(
       );
     }
 
-    const allNodes = await prpcClient.getClusterNodes();
+    // Fetch all nodes from the correct network
+    const allNodes = await client.getClusterNodes(`cluster-${network}`);
     if (allNodes.length === 0) {
       return NextResponse.json(
         { success: false, error: 'Unable to fetch network data' },
@@ -73,13 +95,14 @@ export async function GET(
       recommendations: generateRecommendations(pnode, scoreBreakdown, networkAvg),
     };
 
-    // Cache the result
-    await RedisService.cacheNode(pubkey, nodeData);
+    // Cache the result with network-specific key
+    await RedisService.cacheNode(pubkey, nodeData, network);
 
     return NextResponse.json({
       success: true,
       data: nodeData,
       cached: false,
+      network,
       timestamp: Date.now(),
     });
   } catch (error) {

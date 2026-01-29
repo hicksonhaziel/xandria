@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
 
     // Get the appropriate endpoint
     const endpoint = network === 'mainnet'
-      ? process.env.NEXT_PUBLIC_XANDEUM_MAINET_CREDIT_ENDPOINT
+      ? process.env.NEXT_PUBLIC_XANDEUM_MAINNET_CREDIT_ENDPOINT
       : process.env.NEXT_PUBLIC_XANDEUM_DEVNET_CREDIT_ENDPOINT;
 
     if (!endpoint) {
