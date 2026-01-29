@@ -59,9 +59,9 @@ const ChatInput = ({ message, setMessage, onSend, isSending, darkMode, onRateLim
 
   return (
     <div className={bgClass}>
-      <div className="max-w-4xl mx-auto px-4 py-4">
-        <div className={`${cardClass} border ${borderClass} rounded-2xl shadow-sm`}>
-          <div className="flex items-end gap-3 p-3">
+      <div className="max-w-4xl mx-auto px-4 py-2">
+        <div className={`${cardClass} border ${borderClass} rounded-xl shadow-sm`}>
+          <div className="flex items-end gap-2 p-2">
             
             <div className="flex-1">
               {/* Model Selector */}
@@ -128,7 +128,7 @@ const ChatInput = ({ message, setMessage, onSend, isSending, darkMode, onRateLim
                 rows={1}
                 style={{ 
                   lineHeight: '1.5',
-                  minHeight: '40px',
+                  minHeight: '36px',
                   maxHeight: '200px',
                   overflowY: 'auto',
                   scrollbarWidth: 'none',
@@ -158,7 +158,7 @@ const ChatInput = ({ message, setMessage, onSend, isSending, darkMode, onRateLim
           </div>
         </div>
         
-        <div className={`text-xs ${mutedClass} mt-3 text-center`}>
+        <div className={`text-xs ${mutedClass} mt-2 text-center`}>
           Xandria AI can make mistakes. Consider checking important information.
         </div>
       </div>

@@ -14,7 +14,7 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import ErrorModal from '@/app/components/xandria-ai/ErrorModal';
 import { checkRateLimit, incrementRateLimit, getRemainingTime } from '@/app/components/xandria-ai/rateLimitUtils';
-import { ExternalLink, Settings2, Coins, BarChart3, Wrench, ArrowUpRight } from 'lucide-react';
+import { ExternalLink, Settings2, Coins, BarChart3, Wrench, ArrowUpRight, AlertCircle } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface Message {
@@ -79,25 +79,40 @@ const XandriaAI = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isAiThinking]);
 
-  // Handle URL params and load session - FIXED to prevent auto-reload
+  // Initialize session - works with or without wallet
   useEffect(() => {
-    if (connected && publicKey && !hasInitialized) {
+    if (!hasInitialized) {
       const urlSessionId = params?.session as string;
       
       if (urlSessionId) {
         setSessionId(urlSessionId);
-        loadHistory(urlSessionId);
+        if (connected && publicKey) {
+          loadHistory(urlSessionId);
+        }
       } else if (!sessionId) {
+        // Generate session ID for everyone (wallet or not)
         setSessionId(uuidv4());
       }
       
-      loadSessions();
+      if (connected && publicKey) {
+        loadSessions();
+      }
+      
       setHasInitialized(true);
-    } else if (!connected) {
-      setMessages([]);
-      setSessionId('');
+    }
+  }, [hasInitialized]);
+
+  // Handle wallet connection changes
+  useEffect(() => {
+    if (connected && publicKey) {
+      loadSessions();
+      // If there are messages and a session, try to load history
+      if (sessionId && messages.length === 0) {
+        loadHistory(sessionId);
+      }
+    } else {
+      // Wallet disconnected - clear sessions but keep current chat
       setSessions([]);
-      setHasInitialized(false);
     }
   }, [connected, publicKey]);
 
@@ -151,7 +166,7 @@ const XandriaAI = () => {
   };
 
   const handleSend = async () => {
-    if (!message.trim() || !connected || !publicKey || isSending) return;
+    if (!message.trim() || isSending) return;
 
      // Check rate limit
         const rateLimit = checkRateLimit();
@@ -185,7 +200,7 @@ const XandriaAI = () => {
         body: JSON.stringify({
           action: 'chat',
           session_id: sessionId,
-          wallet_address: publicKey.toString(),
+          wallet_address: connected && publicKey ? publicKey.toString() : null,
           message: userMessage,
           parent_id: messages.length > 0 ? messages[messages.length - 1].id : null
         })
@@ -199,7 +214,7 @@ const XandriaAI = () => {
                 incrementRateLimit();
 
         // Update URL on first message without reloading
-        if (isFirstMessage) {
+        if (isFirstMessage && connected) {
           window.history.pushState({}, '', `/xandria-ai/${sessionId}`);
         }
 
@@ -221,8 +236,10 @@ const XandriaAI = () => {
         };
         setMessages(prev => [...prev, aiMessage]);
         
-        // Refresh sessions
-        loadSessions();
+        // Refresh sessions if wallet connected
+        if (connected && publicKey) {
+          loadSessions();
+        }
       } else {
         setError(data.error || 'Failed to send message');
         setMessages(prev => prev.filter(msg => msg.id !== tempUserMsg.id));
@@ -357,8 +374,8 @@ const XandriaAI = () => {
         <Image
           src="/xandria.png"
           alt="XANDRIA logo"
-          width={45}
-          height={45}
+          width={28}
+          height={28}
           className='rounded-lg'
           priority
         />
@@ -386,36 +403,40 @@ const XandriaAI = () => {
       />
 
       <div className="pt-20 pb-24 lg:pb-8 px-4 sm:px-6 lg:ml-64 min-h-screen">
-        <div className="flex flex-col h-[calc(100vh-5rem)]">
+        <div className="flex flex-col h-[calc(100vh-6rem)]">
           
           {/* Top Bar */}
-          <div className={` px-4 py-2 flex items-center justify-between`}>
+          <div className={` px-4 py-1.5 flex items-center justify-between`}>
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowSessions(!showSessions)}
-                className={`p-2 rounded-lg ${hoverClass} transition-colors`}
-                title="Sessions"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
+              {connected && (
+                <button
+                  onClick={() => setShowSessions(!showSessions)}
+                  className={`p-2 rounded-lg ${hoverClass} transition-colors`}
+                  title="Sessions"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+              )}
             </div>
             
             <div className="flex items-center gap-3">
-              {connected && (
-                <button
-                  onClick={startNewChat}
-                  className="px-4 py-2 flex gap-2 bg-purple-600/15 hover:bg-purple-800/15 rounded-lg transition-colors text-sm font-medium"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  <span className="text">New</span> 
-                </button>
+              <button
+                onClick={startNewChat}
+                className="px-4 py-2 flex gap-2 bg-purple-600/15 hover:bg-purple-800/15 rounded-lg transition-colors text-sm font-medium"
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span className="text">New</span> 
+              </button>
+              {!connected && (
+                <WalletMultiButton />
               )}
             </div>
           </div>
 
-          {/* Sessions Sidebar */}
+         
+          {/* Sessions Sidebar - Only available when connected */}
           {showSessions && connected && (
             <SessionsSidebar
               sessions={sessions}
@@ -427,119 +448,102 @@ const XandriaAI = () => {
           )}
 
           {/* Chat Messages Area */}
-          <div className="flex-1 overflow-y-auto px-4 py-6">
-            {!connected ? (
-              <div className="max-w-4xl mx-auto text-center py-12">
-                <div className={`inline-flex items-center justify-center w-16 h-16 mb-4`}>
-                  <Image
-                    src="/xandria.png"
-                    alt="XANDRIA logo"
-                    width={45}
-                    height={45}
-                    className='rounded-lg'
-                    priority
-                  />
-                </div>
-                <h2 className="text-2xl font-bold mb-2">Connect Your Wallet</h2>
-                <p className={`${mutedClass} mb-6`}>
-                  Please connect your Solana wallet to start chatting with Xandria AI
-                </p>
-                <WalletMultiButton />
-              </div>
-            ) : (
-              <div className="max-w-4xl mx-auto space-y-6">
-                
-                {/* Welcome Section */}
-                {messages.length === 0 && !isLoading && !isAiThinking && (
-                  <div className="text-center py-12">
-                    <div className={`inline-flex items-center justify-center w-16 h-16 mb-4`}>
-                      <Image
-                        src="/xandria.png"
-                        alt="XANDRIA logo"
-                        width={45}
-                        height={45}
-                        className='rounded-lg'
-                        priority
-                      />
-                    </div>
-                    <h1 className="text-3xl font-bold mb-2">Welcome to Xandria AI</h1>
-                    <p className={`${mutedClass} mb-8`}>How can I assist you today?</p>
-                    
-                    {/* Suggested Prompts Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl mx-auto mt-8">
-                      {suggestedPrompts.map((prompt, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setMessage(prompt.title)}
-                          className={`${cardClass} border ${borderClass} rounded-xl p-4 text-left transition-all hover:border-purple-500/50 group relative overflow-hidden`}
-                        >
-                          <div className="flex items-start gap-4">
-                            <div className="p-2.5 rounded-lg bg-purple-600/10 text-purple-600 shrink-0">
-                              <prompt.icon size={18} strokeWidth={2.5} />
-                            </div>
+          <div className="flex-1 overflow-y-auto px-4 py-3 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
+            <div className="max-w-4xl mx-auto space-y-6">
+              
+              {/* Welcome Section */}
+              {messages.length === 0 && !isLoading && !isAiThinking && (
+                <div className="text-center py-12">
+                  <div className={`inline-flex items-center justify-center w-16 h-16 mb-4`}>
+                    <Image
+                      src="/xandria.png"
+                      alt="XANDRIA logo"
+                      width={40}
+                      height={40}
+                      className='rounded-lg'
+                      priority
+                    />
+                  </div>
+                  <h1 className="text-3xl font-bold mb-2">Welcome to Xandria AI</h1>
+                  <p className={`${mutedClass} mb-2`}>How can I assist you today?</p>
+                  {!connected && (
+                    <p className={`text-xs ${mutedClass} mb-8`}>
+                      💡 Connect your wallet to save conversation history
+                    </p>
+                  )}
+                  
+                  {/* Suggested Prompts Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl mx-auto mt-8">
+                    {suggestedPrompts.map((prompt, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setMessage(prompt.title)}
+                        className={`${cardClass} border ${borderClass} rounded-xl p-4 text-left transition-all hover:border-purple-500/50 group relative overflow-hidden`}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="p-2.5 rounded-lg bg-purple-600/10 text-purple-600 shrink-0">
+                            <prompt.icon size={18} strokeWidth={2.5} />
+                          </div>
 
-                            <div className="flex-1 pr-4">
-                              <div className={`font-medium ${textClass} text-sm mb-0.5 flex items-center gap-1`}>
-                                {prompt.title}
-                              </div>
-                              <div className={`text-xs ${mutedClass} leading-relaxed`}>
-                                {prompt.desc}
-                              </div>
+                          <div className="flex-1 pr-4">
+                            <div className={`font-medium ${textClass} text-sm mb-0.5 flex items-center gap-1`}>
+                              {prompt.title}
                             </div>
-                            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <ArrowUpRight className={`w-3 h-3 ${mutedClass}`} />
+                            <div className={`text-xs ${mutedClass} leading-relaxed`}>
+                              {prompt.desc}
                             </div>
                           </div>
-                        </button>
-                      ))}
-                    </div>
+                          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <ArrowUpRight className={`w-3 h-3 ${mutedClass}`} />
+                          </div>
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                )}
+                </div>
+              )}
 
-                {/* Error Display */}
-                {error && (
-                  <div className="bg-red-500 bg-opacity-10 border border-red-500 rounded-lg p-4">
-                    <p className="text-red-500">{error}</p>
-                  </div>
-                )}
+              {/* Error Display */}
+              {error && (
+                <div className="bg-red-500 bg-opacity-10 border border-red-500 rounded-lg p-4">
+                  <p className="text-red-500">{error}</p>
+                </div>
+              )}
 
-                {/* Loading State */}
-                {isLoading && <LoadingSkeleton darkMode={darkMode} />}
+              {/* Loading State */}
+              {isLoading && <LoadingSkeleton darkMode={darkMode} />}
 
-                {/* Messages */}
-                {messages.map((msg, idx) => (
-                  <ChatMessage
-                    key={msg.id}
-                    message={msg}
-                    index={idx}
-                    isLastAiMessage={idx === messages.length - 1 && msg.role === 'model'}
-                    isSending={isSending}
-                    darkMode={darkMode}
-                    onCopy={handleCopy}
-                    onRegenerate={handleRegenerate}
-                    onRate={handleRate}
-                  />
-                ))}
+              {/* Messages */}
+              {messages.map((msg, idx) => (
+                <ChatMessage
+                  key={msg.id}
+                  message={msg}
+                  index={idx}
+                  isLastAiMessage={idx === messages.length - 1 && msg.role === 'model'}
+                  isSending={isSending}
+                  darkMode={darkMode}
+                  onCopy={handleCopy}
+                  onRegenerate={handleRegenerate}
+                  onRate={handleRate}
+                />
+              ))}
 
-                {/* AI Thinking Indicator */}
-                {isAiThinking && <AiThinking />}
-                
-                <div ref={messagesEndRef} />
-              </div>
-            )}
+              {/* AI Thinking Indicator */}
+              {isAiThinking && <AiThinking />}
+              
+              <div ref={messagesEndRef} />
+            </div>
           </div>
 
-          {/* Input Area */}
-          {connected && (
-            <ChatInput
-              message={message}
-              setMessage={setMessage}
-              onSend={handleSend}
-              isSending={isSending}
-              darkMode={darkMode}
-              onRateLimitError={showError}
-            />
-          )}
+          {/* Input Area - Always visible */}
+          <ChatInput
+            message={message}
+            setMessage={setMessage}
+            onSend={handleSend}
+            isSending={isSending}
+            darkMode={darkMode}
+            onRateLimitError={showError}
+          />
 
         </div>
       </div>

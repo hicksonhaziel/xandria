@@ -356,10 +356,10 @@ const XandriaAISession = () => {
       />
 
       <div className="pt-20 transition-all duration-200 ml-[4.5rem] lg:ml-64">
-        <div className="flex flex-col h-[calc(100vh-5rem)]">
+        <div className="flex flex-col h-[calc(100vh-6rem)]">
           
           {/* Top Bar */}
-          <div className={`${cardClass} px-6 py-3 flex items-center justify-between`}>
+          <div className={`${cardClass} px-6 py-1.5 flex items-center justify-between`}>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setShowSessions(!showSessions)}
@@ -417,7 +417,7 @@ const XandriaAISession = () => {
           )}
 
           {/* Chat Messages Area */}
-          <div className="flex-1 overflow-y-auto px-4 py-6">
+          <div className="flex-1 overflow-y-auto px-4 py-3 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
             <div className="max-w-4xl mx-auto space-y-6">
               
               {/* Welcome Section */}
@@ -427,8 +427,8 @@ const XandriaAISession = () => {
                     <Image
                       src="/xandria.png"
                       alt="XANDRIA logo"
-                      width={45}
-                      height={45}
+                      width={40}
+                      height={40}
                       className='rounded-lg'
                       priority
                     />
@@ -482,8 +482,8 @@ const XandriaAISession = () => {
                       <Image
                         src="/xandria.png"
                         alt="XANDRIA logo"
-                        width={45}
-                        height={45}
+                        width={28}
+                        height={28}
                         className='rounded-lg'
                         priority
                       />

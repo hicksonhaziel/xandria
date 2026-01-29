@@ -295,8 +295,8 @@ const ChatMessage = ({
           <Image
             src="/xandria.png"
             alt="XANDRIA logo"
-            width={45}
-            height={45}
+            width={28}
+            height={28}
             className='rounded-lg'
             priority
           />
@@ -322,7 +322,7 @@ const ChatMessage = ({
         </div>
         
         {isAi && !message.isRegenerating && (
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-1.5 mt-2">
             <button 
               onClick={() => onCopy(message.content)}
               className={`p-1.5 rounded ${hoverClass} transition-colors`} 
