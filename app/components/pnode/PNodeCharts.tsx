@@ -25,6 +25,27 @@ interface Props {
 
 type TimePeriod = '10min' | '1h' | '24h' | '7d';
 
+// Custom Tooltip Component
+const CustomTooltip = ({ active, payload, darkMode }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div
+        className={`p-3 rounded-lg border ${
+          darkMode 
+            ? 'bg-[#111827] border-gray-700' 
+            : 'bg-white border-gray-200'
+        } shadow-lg`}
+      >
+        <p className="text-sm font-semibold mb-1">{payload[0].value} {payload[0].name === 'uptime' ? 'hours' : ''}</p>
+        <p className="text-xs text-gray-400">{data.timestamp}</p>
+        <p className="text-xs text-gray-500">{data.date}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function PNodeCharts({ node, darkMode, network }: Props) {
   const cardClass = darkMode ? 'bg-[#0B1220]' : 'bg-white';
   const borderClass = darkMode ? 'border-gray-700' : 'border-gray-200';
@@ -89,10 +110,17 @@ export default function PNodeCharts({ node, darkMode, network }: Props) {
             hour: '2-digit', 
             minute: '2-digit' 
           }),
+      date: isNaN(dateObj.getTime())
+        ? 'Invalid'
+        : dateObj.toLocaleDateString([], {
+            year: '2-digit',
+            month: '2-digit',
+            day: '2-digit'
+          }),
       uptime: Math.floor(point.uptime / 3600), 
       fullTimestamp: ts
     };
-  }) || [];
+  }).reverse() || [];
   
 
   const xanScoreHistoricalData = xanScoreAnalytics.data?.history
@@ -109,10 +137,17 @@ export default function PNodeCharts({ node, darkMode, network }: Props) {
               hour: '2-digit', 
               minute: '2-digit' 
             }),
+        date: isNaN(dateObj.getTime())
+          ? 'Invalid'
+          : dateObj.toLocaleDateString([], {
+              year: '2-digit',
+              month: '2-digit',
+              day: '2-digit'
+            }),
         xanScore: point.xanScore,
         fullTimestamp: ts
       };
-    }) || [];
+    }).reverse() || [];
   
   const TimePeriodSelector = ({ 
     current, 
@@ -308,19 +343,16 @@ export default function PNodeCharts({ node, darkMode, network }: Props) {
                 tickFormatter={(value) => `${value}h`}
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: darkMode ? '#111827' : '#ffffff',
-                  border: `1px solid ${gridStroke}`,
-                  borderRadius: '0.5rem',
-                }}
-                formatter={(value: number) => [`${value} hours`, 'Uptime']}
+                content={<CustomTooltip darkMode={darkMode} />}
               />
               <Line 
                 type="monotone" 
                 dataKey="uptime" 
                 stroke="#3b82f6" 
                 strokeWidth={2}
-                dot={{ r: 3 }}
+                dot={false}
+                activeDot={{ r: 6, strokeWidth: 2, stroke: '#3b82f6' }}
+                filter="drop-shadow(0px 2px 4px rgba(59, 130, 246, 0.3))"
               />
             </LineChart>
           </ResponsiveContainer>
@@ -371,12 +403,7 @@ export default function PNodeCharts({ node, darkMode, network }: Props) {
                 stroke="currentColor"
               />
               <Tooltip
-                contentStyle={{
-                  backgroundColor: darkMode ? '#111827' : '#ffffff',
-                  border: `1px solid ${gridStroke}`,
-                  borderRadius: '0.5rem',
-                }}
-                formatter={(value: number) => [`${value} / 100`, 'XanScore']}
+                content={<CustomTooltip darkMode={darkMode} />}
               />
               
               {/* Reference line at 50 */}
@@ -392,13 +419,15 @@ export default function PNodeCharts({ node, darkMode, network }: Props) {
                 dataKey="xanScore" 
                 stroke="#8b5cf6" 
                 strokeWidth={2}
-                dot={{ r: 3 }}
+                dot={false}
+                activeDot={{ r: 6, strokeWidth: 2, stroke: '#8b5cf6' }}
+                filter="drop-shadow(0px 2px 4px rgba(139, 92, 246, 0.3))"
               />
             </LineChart>
           </ResponsiveContainer>
         )}
 
-        <div className="mt-4 text-sm text-gray-400">
+        <div className="mt-4 text-sm text-sm text-gray-400">
           💡 XanScore is a comprehensive metric that evaluates node quality based on multiple factors. Scores above 75 indicate excellent performance.
         </div>
       </div>
