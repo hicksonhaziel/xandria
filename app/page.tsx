@@ -43,7 +43,7 @@ const Xandria = () => {
 
   const [searchTerm, setSearchTerm] = useState(pnodesState.searchTerm);
   const [filterStatus, setFilterStatus] = useState(pnodesState.filterStatus);
-  const [sortBy, setSortBy] = useState(pnodesState.sortBy);
+  const [sortBy, setSortBy] = useState(pnodesState.sortBy || 'score');
   const [selectedNode, setSelectedNode] = useState<PNode | null>(pnodesState.selectedNode);
   
   useEffect(() => {

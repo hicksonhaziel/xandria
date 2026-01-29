@@ -42,6 +42,13 @@ export function useFilteredPNodes(
       if (sortBy === 'uptime') return (b.uptime || 0) - (a.uptime || 0);
       if (sortBy === 'storage') return (b.storageCommitted || 0) - (a.storageCommitted || 0);
       if (sortBy === 'new') return (a.uptime || 0) - (b.uptime || 0); // Newest first (lowest uptime)
+      if (sortBy === 'public') {
+        // Sort public nodes first, then by score
+        if (a.isPublic === b.isPublic) {
+          return (b.score || 0) - (a.score || 0);
+        }
+        return a.isPublic ? -1 : 1;
+      }
       return 0;
     });
 

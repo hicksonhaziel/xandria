@@ -105,6 +105,8 @@ export default function PNodesTable({
                   </th>
                 )}
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Node</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">IP Address</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Public</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">XandScore™</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
                 <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider">Uptime</th>
@@ -171,6 +173,26 @@ export default function PNodesTable({
                           {node.pubkey.slice(0, 8)}...
                         </span>
                       </div>
+                    </td>
+
+                    {/* IP Address */}
+                    <td className="px-4 py-3">
+                      <span className="font-mono text-xs">
+                        {node.ipAddress || '--'}
+                      </span>
+                    </td>
+
+                    {/* Public */}
+                    <td className="px-4 py-3">
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          node.isPublic
+                            ? 'bg-green-500/20 text-green-400'
+                            : 'bg-gray-500/20 text-gray-400'
+                        }`}
+                      >
+                        {node.isPublic ? 'Yes' : 'No'}
+                      </span>
                     </td>
 
                     {/* Score - compact */}
@@ -364,6 +386,26 @@ export default function PNodesTable({
                 >
                   {node.status}
                 </span>
+              </div>
+
+              {/* Network Info Row */}
+              <div className="flex items-center gap-4 mb-3 pb-3 border-b border-gray-700">
+                <div className="flex-1">
+                  <p className={`text-xs ${mutedClass} mb-1`}>IP Address</p>
+                  <p className="font-mono text-xs font-medium">{node.ipAddress || '--'}</p>
+                </div>
+                <div>
+                  <p className={`text-xs ${mutedClass} mb-1`}>Public</p>
+                  <span
+                    className={`px-2 py-0.5 rounded text-xs font-medium ${
+                      node.isPublic
+                        ? 'bg-green-500/20 text-green-400'
+                        : 'bg-gray-500/20 text-gray-400'
+                    }`}
+                  >
+                    {node.isPublic ? 'Yes' : 'No'}
+                  </span>
+                </div>
               </div>
 
               {/* Score row */}

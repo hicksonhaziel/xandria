@@ -34,25 +34,31 @@ export default function PNodeDetailPage() {
   const [nodeNetwork, setNodeNetwork] = useState<'devnet' | 'mainnet'>('devnet');
   const [networkLoading, setNetworkLoading] = useState(true);
 
-  // Determine node's network on mount
+  // Determine node's network by checking both RPC endpoints
   useEffect(() => {
     async function detectNetwork() {
       try {
         setNetworkLoading(true);
         
-        // Check mainnet first
-        const mainnetRes = await fetch('/api/pods-credits?network=mainnet');
-        const mainnetData = await mainnetRes.json();
+        // Check mainnet first (typically smaller dataset)
+        const mainnetRes = await fetch('/api/pnodes?network=mainnet&cache=false');
         
-        const isMainnet = mainnetData.pods_credits?.some(
-          (pod: any) => pod.pod_id === nodePubkey
-        );
-        
-        if (isMainnet) {
-          setNodeNetwork('mainnet');
-        } else {
-          setNodeNetwork('devnet');
+        if (mainnetRes.ok) {
+          const mainnetData = await mainnetRes.json();
+          
+          const isInMainnet = mainnetData.data?.some(
+            (node: any) => node.pubkey === nodePubkey
+          );
+          
+          if (isInMainnet) {
+            setNodeNetwork('mainnet');
+            return;
+          }
         }
+        
+        // If not in mainnet, default to devnet
+        setNodeNetwork('devnet');
+        
       } catch (error) {
         console.error('Failed to detect network:', error);
         // Default to devnet on error
@@ -69,6 +75,7 @@ export default function PNodeDetailPage() {
 
   const { data, loading, refreshing, error, lastUpdate, refresh } = usePNodeInfo(
     nodePubkey,
+    nodeNetwork,
     { refreshInterval: 30000, autoRefresh: true }
   );
 

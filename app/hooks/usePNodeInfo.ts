@@ -7,7 +7,8 @@ interface UsePNodeInfoOptions {
 }
 
 export function usePNodeInfo( 
-  pubkey: string, 
+  pubkey: string,
+  network: 'devnet' | 'mainnet' = 'devnet',
   options: UsePNodeInfoOptions = {}
 ) {
   const { refreshInterval = 30000, autoRefresh = true } = options;
@@ -31,7 +32,7 @@ export function usePNodeInfo(
     setError(null);
 
     try {
-      const res = await fetch(`/api/pnodes/${pubkey}`);
+      const res = await fetch(`/api/pnodes/${pubkey}?network=${network}`);
       const json: PNodeDetailResponse = await res.json();
 
       if (!res.ok || !json.success) {
@@ -46,7 +47,7 @@ export function usePNodeInfo(
       setLoading(false);
       setRefreshing(false);
     }
-  }, [pubkey]);
+  }, [pubkey, network]);
 
   // Initial fetch
   useEffect(() => {
