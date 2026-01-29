@@ -1,0 +1,28 @@
+name: Keep RAG Service Awake
+
+on:
+  schedule:
+    # Run every 5 minutes
+    - cron: '*/10 6-23 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  ping-health:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Ping RAG Health Endpoint
+        run: |
+          echo "Pinging RAG service at $(date)"
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://xandria-ai-rag.onrender.com/health)
+          
+          if [ $response -eq 200 ]; then
+            echo "✅ RAG service is healthy (HTTP $response)"
+          else
+            echo "⚠️ RAG service returned HTTP $response"
+            exit 1
+          fi
+      
+      - name: Log Result
+        if: always()
+        run: echo "Health check completed at $(date)"

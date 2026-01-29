@@ -125,7 +125,7 @@ async function processNetwork(network: 'devnet' | 'mainnet') {
     for (const node of nodes) {
       try {
         const detailResponse = await fetch(
-          `${BASE_URL}/api/pnodes/${node.pubkey}`
+          `${BASE_URL}/api/pnodes/${node.pubkey}?network=${network}`
         )
         const detailData: PNodeDetailResponse = await detailResponse.json()
 
